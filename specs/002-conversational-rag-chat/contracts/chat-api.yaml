@@ -1,0 +1,289 @@
+openapi: 3.1.0
+info:
+  title: Atlas AI - Conversational RAG & Chat API
+  version: 1.0.0
+  description: Endpoints REST para criação de sessões de chat, consulta de histórico e envio de perguntas ao assistente RAG.
+servers:
+  - url: /api/v1
+    description: API v1 Base Path
+
+paths:
+  /knowledge-bases/{kb_id}/chats:
+    parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Listar todas as sessões de chat da base de conhecimento
+      operationId: list_chat_sessions
+      responses:
+        '200':
+          description: Lista de sessões de chat ordenadas por atividade recente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatSessionResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    post:
+      summary: Criar uma nova sessão de chat
+      operationId: create_chat_session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSessionCreate'
+      responses:
+        '201':
+          description: Sessão criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /knowledge-bases/{kb_id}/chats/{chat_id}:
+    parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: chat_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Obter detalhes da sessão de chat e seu histórico de mensagens
+      operationId: get_chat_session
+      responses:
+        '200':
+          description: Detalhes da sessão com histórico completo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionDetailResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    delete:
+      summary: Excluir uma sessão de chat e todo o seu histórico
+      operationId: delete_chat_session
+      responses:
+        '204':
+          description: Sessão excluída com sucesso
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /knowledge-bases/{kb_id}/chats/{chat_id}/messages:
+    parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: chat_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Enviar uma mensagem para a sessão de chat e receber resposta RAG
+      operationId: send_chat_message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: Resposta sintetizada pelo assistente com fontes citadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '502':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  schemas:
+    ChatSessionCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 150
+          example: "Dúvidas sobre Arquitetura"
+
+    ChatSessionResponse:
+      type: object
+      required:
+        - id
+        - knowledge_base_id
+        - title
+        - message_count
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        knowledge_base_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message_count:
+          type: integer
+          example: 4
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ChatSessionDetailResponse:
+      type: object
+      required:
+        - id
+        - knowledge_base_id
+        - title
+        - messages
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        knowledge_base_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessageResponse'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    SendMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          example: "Como é feita a segmentação de texto no Atlas AI?"
+
+    CitationItem:
+      type: object
+      required:
+        - chunk_id
+        - document_id
+        - document_name
+        - chunk_index
+        - similarity_score
+        - content_snippet
+      properties:
+        chunk_id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+          format: uuid
+        document_name:
+          type: string
+        chunk_index:
+          type: integer
+        similarity_score:
+          type: number
+          format: float
+          example: 0.8842
+        content_snippet:
+          type: string
+
+    ChatMessageResponse:
+      type: object
+      required:
+        - id
+        - chat_session_id
+        - role
+        - content
+        - citations
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        chat_session_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationItem'
+        prompt_tokens:
+          type: integer
+          nullable: true
+          example: 320
+        completion_tokens:
+          type: integer
+          nullable: true
+          example: 85
+        latency_ms:
+          type: integer
+          nullable: true
+          example: 1240
+        created_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+        - code
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+
+  responses:
+    ErrorResponse:
+      description: Erro padrão da aplicação
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
