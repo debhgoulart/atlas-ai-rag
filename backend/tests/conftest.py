@@ -10,6 +10,7 @@ if backend_root not in sys.path:
     sys.path.insert(0, backend_root)
 
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from app.main import app
 
@@ -20,9 +21,9 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(loop_scope="function")
 async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Provide an asynchronous HTTP client for endpoint testing."""
-    transport = ASGITransport(app=app)
+    transport = ASGITransport(app=app, raise_app_exceptions=False)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
