@@ -69,8 +69,8 @@ function handleFileInput(e: Event) {
       :class="[
         'relative rounded-2xl border-2 border-dashed p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center',
         isDragging
-          ? 'border-indigo-500 bg-indigo-50/50 scale-[1.01]'
-          : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50/50 bg-white',
+          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 scale-[1.01]'
+          : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50/50 dark:border-zinc-850 dark:hover:border-zinc-700 dark:hover:bg-zinc-950/60 bg-white dark:bg-black',
         isUploading ? 'opacity-60 pointer-events-none' : '',
       ]"
     >
@@ -82,17 +82,17 @@ function handleFileInput(e: Event) {
         :disabled="isUploading"
       />
 
-      <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-zinc-900 dark:text-indigo-400 dark:border dark:border-zinc-800 flex items-center justify-center mb-3">
         <Loader2 v-if="isUploading" class="w-6 h-6 animate-spin" />
         <UploadCloud v-else class="w-6 h-6" />
       </div>
 
-      <p class="text-sm font-semibold text-slate-800">
+      <p class="text-sm font-semibold text-slate-800 dark:text-zinc-200">
         <span v-if="isUploading">Processando documento e gerando embeddings...</span>
-        <span v-else>Arraste seu documento aqui ou <span class="text-indigo-600 underline">procure no computador</span></span>
+        <span v-else>Arraste seu documento aqui ou <span class="text-indigo-600 dark:text-indigo-400 underline">procure no computador</span></span>
       </p>
 
-      <p class="text-xs text-slate-400 mt-1">
+      <p class="text-xs text-slate-400 dark:text-zinc-500 mt-1">
         Suporta PDF, TXT ou Markdown (.md) até 10 MB
       </p>
     </div>
@@ -100,9 +100,9 @@ function handleFileInput(e: Event) {
     <!-- Error Alert -->
     <div
       v-if="localError"
-      class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2"
+      class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300 text-xs flex items-center gap-2"
     >
-      <AlertCircle class="w-4 h-4 shrink-0 text-rose-500" />
+      <AlertCircle class="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
       <span>{{ localError }}</span>
     </div>
   </div>

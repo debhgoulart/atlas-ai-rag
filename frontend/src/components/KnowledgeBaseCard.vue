@@ -26,24 +26,24 @@ function handleDelete(e: Event) {
 
 <template>
   <div
-    class="group relative bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex flex-col justify-between"
+    class="group relative bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-850 p-5 shadow-xs hover:border-indigo-400 dark:hover:border-zinc-700 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
   >
     <div>
       <!-- Header row: Icon, Badge and Actions -->
       <div class="flex items-start justify-between gap-3 mb-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 dark:bg-zinc-900 dark:border-zinc-800 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
           <Folder class="w-5 h-5" />
         </div>
 
         <div class="flex items-center gap-1.5">
-          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-            <Files class="w-3 h-3 text-slate-500" />
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-zinc-900 dark:text-zinc-300 border border-transparent dark:border-zinc-800">
+            <Files class="w-3 h-3 text-slate-500 dark:text-zinc-400" />
             {{ kb.document_count }} {{ kb.document_count === 1 ? 'doc' : 'docs' }}
           </span>
 
           <button
             @click="handleDelete"
-            class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+            class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:text-zinc-500 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 rounded-lg transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
             title="Excluir base de conhecimento"
           >
             <Trash2 class="w-4 h-4" />
@@ -52,23 +52,23 @@ function handleDelete(e: Event) {
       </div>
 
       <!-- Title & Description -->
-      <h3 class="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors mb-1.5 line-clamp-1">
+      <h3 class="text-base font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-1.5 line-clamp-1">
         {{ kb.name }}
       </h3>
-      <p class="text-sm text-slate-500 line-clamp-2 leading-relaxed mb-4">
+      <p class="text-sm text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed mb-4">
         {{ kb.description || "Nenhuma descrição fornecida." }}
       </p>
     </div>
 
     <!-- Actions Footer -->
-    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-      <span class="text-xs text-slate-400">
+    <div class="pt-3 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between">
+      <span class="text-xs text-slate-400 dark:text-zinc-500">
         Criado em {{ new Date(kb.created_at).toLocaleDateString('pt-BR') }}
       </span>
 
       <RouterLink
         :to="`/knowledge-bases/${kb.id}`"
-        class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 group-hover:translate-x-0.5 transition-transform"
+        class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 group-hover:translate-x-0.5 transition-transform"
       >
         <span>Acessar</span>
         <ArrowRight class="w-3.5 h-3.5" />

@@ -66,6 +66,10 @@ export interface ChatSessionDetail extends ChatSession {
   messages: ChatMessage[];
 }
 
+export interface SendMessageRequest {
+  content: string;
+}
+
 export interface ApiError {
   detail: string;
   code: string;
