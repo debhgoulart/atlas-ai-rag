@@ -1,190 +1,272 @@
-# Atlas AI — Full Stack RAG & Knowledge Base Chatbot
+# 🌌 Atlas AI — Full Stack RAG & Knowledge Base Engine
 
-O **Atlas AI** é uma aplicação web Full Stack moderna de gerenciamento de bases de conhecimento e chatbot inteligente, desenvolvida para demonstrar competências avançadas em Engenharia de Software, Engenharia de IA, Retrieval-Augmented Generation (RAG) e arquitetura de sistemas distribuídos.
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![pgvector](https://img.shields.io/badge/pgvector-Vector_Search-4169E1?style=for-the-badge&logo=databricks&logoColor=white)
+![Vue.js](https://img.shields.io/badge/Vue.js_3-TypeScript-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+<p align="center">
+  <b>Motor completo de Recuperação Aumentada por Geração (RAG) de nível de produção.</b><br>
+  Desenvolvido com arquitetura assíncrona desacoplada, indexação vetorial nativa em PostgreSQL via <code>pgvector</code>, guardrails estritos contra alucinações e interface reativa moderna.
+</p>
+
+[Visão Geral](#-visão-geral) • [Demonstração Visual](#-demonstração-visual) • [Decisões Arquiteturais](#-decisões-arquiteturais--estudo-de-caso) • [Arquitetura](#-arquitetura-do-sistema) • [Como Executar](#-como-executar-localmente) • [Roadmap](#-roadmap-e-evoluções-futuras)
+
+</div>
 
 ---
 
-## 🎯 Objetivos do Projeto
+## 🎯 Visão Geral
 
-- **Criação e Gestão de Bases de Conhecimento**: Organização de coleções temáticas de documentos por domínios.
-- **Pipeline de Ingestão e Vetorização**: Upload de documentos (PDF, Markdown, TXT), extração de texto, chunking semântico com overlap e geração de embeddings com o Google Gemini (`gemini-embedding-001`, 768 dimensões via MRL).
-- **Armazenamento Vetorial Escalável**: Indexação e busca por similaridade de cosseno utilizando PostgreSQL com a extensão `pgvector`.
-- **Chatbot Contextualizado e Confiável**: Síntese de respostas via LLM (Google Gemini) estritamente fundamentadas no contexto dos documentos ingeridos, com guardrails contra alucinações.
-- **Transparência e Citação de Fontes**: Apresentação de metadados dos chunks de origem (documento, página, trecho e pontuação de relevância) para cada resposta gerada.
-- **Governança com Spec Kit**: Desenvolvimento guiado por especificações formais, planos arquiteturais e tarefas atômicas independentes.
+O **Atlas AI** é uma solução *Full Stack* voltada para a gestão de bases de conhecimento e conversação contextualizada via **Retrieval-Augmented Generation (RAG)**. O projeto foi projetado para demonstrar competências sólidas em **Engenharia de Software**, **Engenharia de IA** e **Arquitetura de Sistemas Distribuídos**, superando a fragilidade de tutoriais genéricos e scripts em notebooks ao adotar padrões corporativos reais:
+
+- **Bases de Conhecimento Multidomínio**: Criação, isolamento e gestão de coleções documentais independentes.
+- **Pipeline de Ingestão e Chunking Semântico**: Processamento de arquivos heterogêneos (`.pdf`, `.md`, `.txt`), segmentação recursiva preservando limites conceituais e geração de embeddings densos via Google Gemini (`text-embedding-004`).
+- **Recuperação Vetorial em Banco de Produção**: Consultas de similaridade por cosseno (`<=>`) executadas diretamente no PostgreSQL através da extensão `pgvector`, com suporte a índices HNSW de alta performance.
+- **Guardrails Anti-Alucinação Estritos**: Prompt de sistema projetado para tolerância zero a invenções e mitigação de *prompt injection*, garantindo respostas factuais com atribuição explícita de fontes.
+- **Transparência e Métricas em Tempo Real**: Exibição detalhada para o usuário final de scores de similaridade, trechos documentais consultados, tempo de latência e consumo de tokens.
+- **Segurança de Credenciais (BYOK - Bring Your Own Key)**: Criptografia simétrica em repouso com Fernet (AES-128-CBC + HMAC) para armazenamento isolado de chaves por usuário.
 
 ---
 
-## 🏗️ Arquitetura Monorepo
+## 📸 Demonstração Visual
 
-O projeto adota uma arquitetura **Monorepo** com separação estrita de responsabilidades:
+<!-- 
+  =============================================================================
+  DICA PARA ADICIONAR SEUS PRINTS E VÍDEOS:
+  1. Salve as imagens na pasta: docs/assets/ (ex: screenshot-chat.png, upload.png)
+  2. Para vídeos, você pode usar um GIF animado ou link do YouTube/Loom!
+  =============================================================================
+-->
+
+### 🎥 Demonstração em Vídeo / GIF Interativo
+
+> [!TIP]
+> Substitua o link abaixo pela gravação da tela ou GIF animado do seu fluxo de uso:
+
+```markdown
+<!-- Adicione seu vídeo ou GIF aqui: -->
+<!-- ![Demonstração Atlas AI](docs/assets/atlas-ai-demo.gif) -->
+```
+
+<div align="center">
+  <p><i>(Grave um tour rápido de 30 a 60 segundos demonstrando a criação de uma base, upload de arquivo e o chat RAG em funcionamento)</i></p>
+</div>
+
+---
+
+### 🖼️ Telas da Aplicação
+
+<div align="center">
+
+#### 1. Chat RAG com Guardrail Anti-Alucinação e Rastreamento de Fontes
+*Demonstração do modelo respondendo de forma factual e acionando o fallback seguro ao detectar ausência de dados contextuais suficientes:*
+
+<img src="docs/assets/rag-chat-anti-hallucination.png" alt="Chat RAG com Citações e Guardrail" width="900" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;" />
+
+<br>
+
+#### 2. Pipeline de Ingestão e Processamento de Documentos
+```markdown
+<!-- Adicione seu print da tela de upload e listagem de documentos aqui: -->
+<!-- <img src="docs/assets/document-management.png" alt="Gestão de Documentos" width="900" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;" /> -->
+```
+
+#### 3. Dashboard e Gestão de Bases de Conhecimento
+```markdown
+<!-- Adicione seu print da tela inicial/dashboard de bases de conhecimento aqui: -->
+<!-- <img src="docs/assets/knowledge-base-dashboard.png" alt="Dashboard de Bases" width="900" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;" /> -->
+```
+
+</div>
+
+---
+
+## 🧠 Decisões Arquiteturais & Estudo de Caso
+
+O projeto foi construído sob uma governança formal orientada a **ADRs (Architectural Decision Records)**. Abaixo destacam-se os principais pilares técnicos:
+
+### 1. Por que PostgreSQL + `pgvector` em vez de bancos vetoriais isolados?
+Bancos puramente vetoriais em nuvem (como Pinecone ou Qdrant) resolvem a busca por similaridade, mas adicionam complexidade acentuada em aplicações reais:
+- **Transações ACID e Consistência Relacional**: No Atlas AI, a deleção de uma base ou documento remove imediatamente seus metadados, arquivos e chunks vetoriais em uma única transação relacional (`ON DELETE CASCADE`), sem risco de dados órfãos.
+- **Filtros Híbridos Simples**: Permite combinar cláusulas relacionais padrão (`WHERE kb_id = ... AND user_id = ...`) com ordenação vetorial (`ORDER BY embedding <=> query_embedding`) em uma única query SQL otimizada.
+- **Simplicidade Operacional (Princípio KISS)**: Uma única infraestrutura de banco de dados para dados relacionais e vetoriais, viabilizando deploy local simplificado com `docker compose` ou em produção via PostgreSQL gerenciado.
+
+*(Mais detalhes em: [ADR 0001: Estratégia de pgvector e Chunking](docs/adr/0001-pgvector-and-chunking-strategy.md))*
+
+---
+
+### 2. Chunking Recursivo Nativo vs. Frameworks Pesados
+Em vez de importar bibliotecas inchadas que adicionam centenas de dependências indiretas, implementamos um fatiador recursivo nativo (`RecursiveTextChunker`):
+- Segmenta textos respeitando uma hierarquia natural: **parágrafos (`\n\n`) $\to$ quebras de linha (`\n`) $\to$ sentenças (`. `) $\to$ palavras (` `)**.
+- Adota **tamanho de 500 caracteres com overlap de 100 caracteres**, garantindo continuidade semântica e evitando que conceitos essenciais sejam cortados bruscamente na fronteira entre blocos.
+
+---
+
+### 3. Guardrails Anti-Alucinação e Delimitação Estrita (`<context>`)
+A síntese de respostas em RAG corporativo exige precisão cirúrgica:
+- **Isolamento XML**: Os chunks recuperados da base são injetados em um bloco delimitado por `<context> ... </context>`. O prompt de sistema instrui o modelo a interpretar esse conteúdo exclusivamente como dados factuais passivos, imunizando o assistente contra ataques de *prompt injection* contidos nos próprios documentos.
+- **Tolerância Zero a Alucinações**: Caso o contexto recuperado não contenha evidências explícitas e inequívocas para responder à pergunta, o assistente é instruído a emitir compulsoriamente a resposta segura: *"Desculpe, não encontrei informações sobre este tema nos documentos da base de conhecimento."*
+
+*(Mais detalhes em: [ADR 0002: Prompt Engineering e Anti-Alucinação](docs/adr/0002-prompt-engineering-and-anti-hallucination.md))*
+
+---
+
+### 🔬 Estudo de Caso Prático: Os Desafios do Naive RAG vs. Advanced RAG
+
+Durante a bateria de validações com dados reais (upload simultâneo do *Deck de Cultura do iFood* com 39 páginas e um *Currículo Profissional* de 1 página), executamos a seguinte consulta comparativa:
+
+> **Usuário:** *"O meu currículo está de acordo com o deck de cultura do ifood?"*
+> 
+> **Resultado da Aplicação:** O sistema retornou o aviso padrão anti-alucinação: *"Desculpe, não encontrei informações sobre este tema nos documentos da base de conhecimento."*
+
+#### Diagnóstico Técnico da Causa Raiz:
+1. **Gargalo do Top-K Fixo ($K=5$) e Disparidade de Volume**: O deck possui 39 páginas (gerando dezenas de chunks), enquanto o currículo possui apenas 1 página (gerando 2 chunks). Como a consulta enfatizou termos como "cultura" e "ifood", os 5 resultados com maior similaridade de cosseno foram todos pertencentes ao deck de cultura.
+2. **Ausência do Currículo no Contexto do LLM**: Nenhum chunk do currículo esteve presente entre os 5 trechos enviados ao Gemini.
+3. **Comportamento Confiável do Guardrail**: Em vez de fabricar uma análise ou alucinar sobre um currículo ausente, o modelo identificou a insuficiência de dados e ativou corretamente o guardrail de segurança.
+
+#### 💡 Soluções e Evoluções Mapeadas (Roadmap v1.1):
+- **Decomposição de Query (*Query Decomposition*)**: Pré-processamento via LLM para desmembrar perguntas comparativas em duas sub-consultas vetoriais separadas (uma para o currículo e outra para os pilares de cultura).
+- **Recuperação Balanceada / MMR (*Maximal Marginal Relevance*)**: Forçar diversidade documental para garantir representatividade de múltiplos arquivos no contexto final.
+- **Reranking com Cross-Encoder**: Elevar o corte inicial para $K=15$ e reordenar semanticamente antes da montagem do prompt.
+
+---
+
+### 4. Segurança e Isolamento de Chaves (BYOK)
+- **Criptografia Simétrica Fernet**: As chaves de API dos usuários são criptografadas em repouso no banco de dados com chave mestra de alta entropia.
+- **Desacoplamento de Custos**: Nenhum custo de LLM é centralizado no servidor; cada usuário opera com suas próprias cotas seguras do Google AI Studio.
+
+*(Mais detalhes em: [ADR 0003: Criptografia de Credenciais e Isolamento](docs/adr/0003-user-credentials-encryption-and-isolation.md))*
+
+---
+
+## 🏗️ Arquitetura do Sistema
+
+O Atlas AI segue o padrão **Monorepo** com separação explícita de responsabilidades em camadas desacopladas:
 
 ```text
 atlas-ai-rag/
-├── backend/             # Aplicação Python / FastAPI (REST API v1)
-│   ├── alembic/         # Migrações versionadas do banco relacional + pgvector
-│   ├── app/             # Camadas: models, schemas, services, api/v1
-│   └── tests/           # Suíte de testes unitários e testes integrados
-├── frontend/            # Aplicação SPA Vue 3 + TypeScript + Vite + Tailwind CSS
-│   └── src/             # Componentes, views, stores (Pinia), services (Axios)
-├── specs/               # Especificações funcionais gerenciadas pelo Spec Kit
-├── docs/                # Documentação técnica e ADRs (Architectural Decision Records)
-├── tests/               # Testes integrados e benchmarks
-├── .specify/            # Configurações e memória da Constitution do Spec Kit
-└── docker-compose.yml   # Orquestração de containers local (PostgreSQL + pgvector)
+├── backend/                  # API REST Assíncrona (FastAPI + Python 3.11+)
+│   ├── alembic/              # Migrações versionadas do banco relacional + pgvector
+│   ├── app/
+│   │   ├── api/v1/           # Rotas REST organizadas por domínio (auth, kb, chat, docs)
+│   │   ├── core/             # Configurações, segurança JWT, Fernet e exceções
+│   │   ├── db/               # Sessão assíncrona do SQLAlchemy 2.0 (asyncpg)
+│   │   ├── models/           # Entidades relacionais e vetoriais do banco
+│   │   ├── schemas/          # Contratos de dados Pydantic v2
+│   │   └── services/         # Regras de negócio, Ingestão, Chunker e Cliente Gemini
+│   └── tests/                # Suíte de testes unitários e de integração
+├── frontend/                 # Single Page Application (Vue 3 + Vite + Tailwind CSS)
+│   └── src/
+│       ├── components/       # Componentes reativos reutilizáveis
+│       ├── stores/           # Gerenciamento de estado global com Pinia
+│       ├── views/            # Telas da aplicação (Dashboard, Base Detail, Chat RAG)
+│       └── services/         # Integração HTTP com a API via Axios
+├── docs/                     # Documentação viva, assets visuais e ADRs
+├── specs/                    # Especificações funcionais guiadas pelo Spec Kit
+└── docker-compose.yml        # Orquestrador local do banco PostgreSQL com pgvector
 ```
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias e Ferramentas
 
-### Frontend
-- **Framework**: Vue.js 3 (Composition API com `<script setup>`)
-- **Linguagem**: TypeScript (Strict Mode)
-- **Build Tool**: Vite
-- **Gerenciamento de Estado**: Pinia
-- **Roteamento**: Vue Router
-- **Estilização**: Tailwind CSS
-- **Ícones**: Lucide Vue Next
-- **Cliente HTTP**: Axios
-
-### Backend
-- **Linguagem**: Python 3.11+
-- **Framework Web**: FastAPI (endpoints assíncronos)
-- **Validação de Schemas**: Pydantic v2
-- **Banco de Dados & ORM**: PostgreSQL + SQLAlchemy 2.0 (async via `asyncpg`)
-- **Migrações**: Alembic
-- **Banco Vetorial**: Extensão `pgvector`
-
-### Inteligência Artificial & RAG
-- **LLM**: Google Gemini API (`gemini-2.5-flash` / `gemini-1.5-flash`)
-- **Embeddings**: Google Gemini `gemini-embedding-001` (vetores densos de 768 dimensões com suporte a Matryoshka Representation Learning)
-- **Técnica RAG**: Chunking semântico com preservação de parágrafos, similaridade de cosseno via pgvector (`<=>`), injeção dinâmica de contexto com restrições anti-alucinação.
+| Camada | Tecnologia | Propósito / Benefício |
+|---|---|---|
+| **Backend** | Python 3.11+ / FastAPI | Alto throughput com I/O assíncrono nativo e documentação OpenAPI automática |
+| **Banco Relacional & Vetorial** | PostgreSQL 16 + `pgvector` | Armazenamento híbrido ACID para dados relacionais e busca por similaridade de cosseno |
+| **ORM & Migrações** | SQLAlchemy 2.0 / Alembic | Modelagem assíncrona com `asyncpg` e versionamento determinístico de esquemas |
+| **Embeddings & LLM** | Google Gemini API | `text-embedding-004` (768 dimensões) e `gemini-2.5-flash` para geração rápida e de baixo custo |
+| **Frontend** | Vue.js 3 + TypeScript | Interface reativa orientada a componentes com Composition API e tipagem estrita |
+| **Estilização & UI** | Tailwind CSS + Lucide Icons | Design moderno, responsivo e focado em experiência do desenvolvedor |
+| **Gerenciamento de Estado** | Pinia | Reatividade global centralizada com suporte a TypeScript |
+| **Ambiente & Deploy** | Docker Compose | Reproducibilidade garantida para desenvolvimento e integração contínua |
 
 ---
 
 ## 🚀 Como Executar Localmente
 
 ### Pré-requisitos
-Certifique-se de ter instalados em seu ambiente:
-- **Docker & Docker Compose** (para o PostgreSQL com `pgvector`)
-- **Python 3.11+** e gerenciador `pip`
+- **Docker & Docker Compose** (para subir o PostgreSQL com `pgvector`)
+- **Python 3.11+** e `pip`
 - **Node.js 20+** e `npm`
 - **Chave de API do Google Gemini**: Obtenha gratuitamente no [Google AI Studio](https://aistudio.google.com/).
 
 ---
 
-### ⚡ Opção 1: Inicialização Rápida Interativa (Recomendado)
+### ⚡ Opção 1: Inicialização Rápida Automatizada (Recomendado)
 
-O projeto possui um script orquestrador interativo que automatiza todo o processo a partir do zero:
+O projeto conta com um script de automação (`start.sh`) que configura e sobe o ecossistema completo:
 
 ```bash
 # 1. Clonar o repositório
-git clone git@github.com:debhgoulart/atlas-ai-rag.git
+git clone https://github.com/debhgoulart/atlas-ai-rag.git
 cd atlas-ai-rag
 
-# 2. Executar o script inicializador
+# 2. Executar o inicializador interativo
 ./start.sh
 ```
 
-**O que o script `./start.sh` faz automaticamente:**
-1. Apresenta instruções claras de como gerar sua chave gratuita no Google AI Studio.
-2. Permite colar a chave diretamente no terminal para gravar no `.env`.
-3. Sobe o container Docker do PostgreSQL com a extensão `pgvector`.
-4. Aplica todas as migrações do banco com o Alembic.
-5. Oferece a opção de sanitizar o banco para iniciar em estado 100% zerado.
-6. Inicia o Backend FastAPI (`http://localhost:8000/docs`) e o Frontend Vue 3 (`http://localhost:5173`).
-7. Encerra todos os serviços de forma graciosa ao pressionar `Ctrl + C`.
+**O que o `./start.sh` orquestra automaticamente:**
+1. Guia o usuário caso ainda não possua a chave do Google Gemini configurada.
+2. Inicia o container Docker do PostgreSQL com `pgvector`.
+3. Aplica automaticamente as migrações do Alembic.
+4. Oferece opção de sanitização do banco para inicialização limpa (*zero-state*).
+5. Inicia o Backend FastAPI (`http://localhost:8000/docs`) e o Frontend Vue 3 (`http://localhost:5173`).
+6. Trata o encerramento gracioso dos processos ao pressionar `Ctrl + C`.
 
 ---
 
 ### 🛠️ Opção 2: Execução Manual Passo a Passo
 
-Caso prefira iniciar cada serviço individualmente:
+<details>
+<summary><b>Clique para expandir as instruções manuais detalhadas</b></summary>
 
 #### Passo 1: Configurar Variáveis de Ambiente
-
 ```bash
 cp .env.example .env
 ```
-Abra o `.env` e configure sua `GEMINI_API_KEY`.
+Edite o arquivo `.env` inserindo sua chave `GEMINI_API_KEY` e gerando chaves secretas para `SECRET_KEY` e `CREDENTIALS_ENCRYPTION_KEY`.
 
----
-
-### Passo 2: Iniciar o Banco de Dados com pgvector
-
-Suba o container do PostgreSQL 16 com a extensão `pgvector` pré-instalada:
-
+#### Passo 2: Subir o Banco de Dados Vetorial
 ```bash
 docker compose up -d db
 ```
 
-Para verificar se o container está saudável:
+#### Passo 3: Configurar e Rodar o Backend
 ```bash
-docker compose ps
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate       # No Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-
----
-
-### Passo 3: Configurar e Iniciar o Backend
-
-1. Acesse o diretório do backend e crie o ambiente virtual:
-   ```bash
-   cd backend
-   python3 -m venv .venv
-   source .venv/bin/activate
-   # No Windows (PowerShell): .venv\Scripts\Activate.ps1
-   ```
-
-2. Instale as dependências:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Execute as migrações do banco de dados (criação da extensão `pgvector` e de todas as tabelas):
-   ```bash
-   alembic upgrade head
-   ```
-
-4. Inicie o servidor da API FastAPI:
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-- **Swagger / OpenAPI interativo**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Documentação Swagger**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Health Check**: [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
 
----
+#### Passo 4: Configurar e Rodar o Frontend
+Em outro terminal:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+- **Aplicação Web**: [http://localhost:5173](http://localhost:5173)
 
-### Passo 4: Configurar e Iniciar o Frontend
-
-Em um novo terminal, a partir da raiz do projeto:
-
-1. Acesse o diretório do frontend:
-   ```bash
-   cd frontend
-   ```
-
-2. Instale os pacotes npm:
-   ```bash
-   npm install
-   ```
-
-3. Inicie o servidor de desenvolvimento do Vite:
-   ```bash
-   npm run dev
-   ```
-
-4. Abra seu navegador em:
-   ```text
-   http://localhost:5173
-   ```
+</details>
 
 ---
 
-## 🧪 Como Executar a Suíte de Testes
+## 🧪 Suíte de Testes Automatizados
 
-O projeto conta com suíte de testes unitários e de integração automatizada:
+O projeto conta com testes automatizados cobrindo tanto regras puras quanto fluxos integrados de ponta a ponta:
 
 ```bash
 cd backend
@@ -192,70 +274,37 @@ source .venv/bin/activate
 pytest tests/ -v
 ```
 
-- **Testes Unitários**: Validação dos parsers de documentos (PDF, MD, TXT) e algoritmo de chunking recursivo com overlap.
-- **Testes de Integração**: Testes de ponta a ponta dos endpoints de Base de Conhecimento, Ingestão de Documentos, Busca Vetorial e Chat RAG com preservação de histórico e guardrails anti-alucinação.
+- **Testes Unitários**: Validação dos parsers de arquivo (PDF, Markdown, TXT) e algoritmo do `RecursiveTextChunker`.
+- **Testes de Integração**: Endpoints de bases de conhecimento, upload de arquivos, busca vetorial e conversação RAG com verificação de histórico e guardrails anti-alucinação.
 
 ---
 
-## 🧹 Como Limpar / Zerar a Base de Dados (Zero-State)
+## 🗺️ Roadmap e Evoluções Futuras
 
-Para reiniciar o banco em estado completamente limpo (sem documentos ou conversas de teste), preservando as migrações e a extensão `pgvector`:
-
-```bash
-cd backend
-source .venv/bin/activate
-python -m app.scripts.reset_db
-```
+- [ ] **Advanced RAG — Query Decomposition**: Decompor perguntas comparativas e complexas em múltiplos sub-vetores de busca.
+- [ ] **Hybrid Search (BM25 + Dense Embeddings)**: Combinar busca por palavras-chave com busca semântica para queries técnicas com termos específicos.
+- [ ] **Re-ranking com Cross-Encoder**: Refinar a lista dos top chunks recuperados antes do envio ao modelo gerador.
+- [ ] **Avaliação Contínua com RAG Triad**: Integrar métricas de *Context Relevance*, *Groundedness* e *Answer Relevance* via Ragas/TruLens.
+- [ ] **Suporte a Novas Fontes**: Ingestão direta de áudio via Whisper, planilhas CSV/XLSX e integração com Google Drive.
 
 ---
 
-## 💡 Fluxo de Uso Recomendado
+## 👩‍💻 Autora
 
-1. **Criar uma Base de Conhecimento**:
-   - No Dashboard do Atlas AI, clique em **"Nova Base de Conhecimento"**.
-   - Defina um nome temático (ex: *Documentação Técnica*, *Manuais Internos*).
+<div align="center">
 
-2. **Ingestão de Arquivos**:
-   - Abra a base criada e arraste arquivos nos formatos `.pdf`, `.md` ou `.txt`.
-   - O pipeline automático realiza a extração do texto bruto, divide em chunks semânticos e armazena os embeddings vetoriais de 768 dimensões.
+**Deborah de Oliveira Goulart**  
+*Graduanda em Ciência da Computação • Desenvolvedora Backend & Engenharia de IA*
 
-3. **Interação com o Chat RAG**:
-   - Clique na aba **"Chat RAG"** da base.
-   - Envie perguntas sobre o conteúdo dos documentos.
-   - O modelo fornecerá respostas sintetizadas e você poderá clicar no botão **"Ver Fontes"** para inspecionar os trechos exatos utilizados e seus respectivos graus de relevância.
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/deborahgoulart)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/debhgoulart)
+[![Portfólio](https://img.shields.io/badge/Portfólio-Web-8A2BE2?style=for-the-badge&logo=vercel&logoColor=white)](https://deborah-goulart-portifolio.vercel.app/)
+[![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:debh.goulart@gmail.com)
 
----
-
-## 📑 Decisões Arquiteturais (ADRs)
-
-Para compreender as motivações técnicas das escolhas adotadas neste projeto, consulte:
-- [ADR 0001: Estratégia de pgvector e Chunking](docs/adr/0001-pgvector-and-chunking-strategy.md)
-- [ADR 0002: Engenharia de Prompt e Anti-Alucinação](docs/adr/0002-prompt-engineering-and-anti-hallucination.md)
-- [ADR 0003: Criptografia de Credenciais e Isolamento de Chaves](docs/adr/0003-user-credentials-encryption-and-isolation.md)
-- [Constitution do Projeto](.specify/memory/constitution.md)
-
----
-
-## ☁️ Deploy em Produção (Render + Vercel)
-
-O Atlas AI foi arquitetado para desacoplamento completo entre Frontend e Backend em produção:
-
-### 1. Backend no Render (Web Service Docker/Python)
-Configure as seguintes variáveis de ambiente no painel do **Render**:
-- `DATABASE_URL`: Connection string do PostgreSQL com suporte à extensão `pgvector`.
-- `SECRET_KEY`: Chave secreta de alta entropia para assinatura dos tokens JWT Bearer.
-- `CREDENTIALS_ENCRYPTION_KEY`: Chave mestra Fernet de 32 bytes base64 para criptografia simétrica das chaves dos usuários. (Gere com: `python backend/app/scripts/generate_encryption_key.py`).
-- `BACKEND_CORS_ORIGINS`: JSON array com a URL da sua aplicação no Vercel, ex: `["https://seu-atlas-ai.vercel.app"]`.
-- `ENVIRONMENT`: `production`.
-
-### 2. Frontend na Vercel (Vite Static SPA)
-Configure a seguinte variável de ambiente no painel da **Vercel**:
-- `VITE_API_BASE_URL`: URL pública da sua API no Render com sufixo `/api/v1` (ex: `https://atlas-ai-backend.onrender.com/api/v1`).
-
-> **Segurança de Credenciais**: As Gemini API Keys dos usuários NUNCA são configuradas no Render ou na Vercel; cada usuário cadastra sua própria chave criptografada via interface ou API.
+</div>
 
 ---
 
 ## 📄 Licença
 
-Distribuído sob a licença MIT. Consulte `LICENSE` para mais detalhes.
+Este projeto está sob a licença [MIT](LICENSE). Sinta-se livre para estudar, sugerir melhorias ou utilizá-lo como referência técnica!
