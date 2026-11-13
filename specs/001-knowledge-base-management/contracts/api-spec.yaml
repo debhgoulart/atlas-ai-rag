@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: Atlas AI - Knowledge Base Management & Document Ingestion API
+  version: 1.0.0
+  description: Endpoints REST para gerenciamento de bases de conhecimento, upload de documentos e busca por similaridade vetorial.
+servers:
+  - url: /api/v1
+    description: API v1 Base Path
+
+paths:
+  /knowledge-bases:
+    get:
+      summary: Listar todas as bases de conhecimento
+      operationId: list_knowledge_bases
+      parameters:
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Lista de bases de conhecimento paginada
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KnowledgeBaseResponse'
+
+    post:
+      summary: Criar uma nova base de conhecimento
+      operationId: create_knowledge_base
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeBaseCreate'
+      responses:
+        '201':
+          description: Base criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeBaseResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /knowledge-bases/{kb_id}:
+    parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Obter detalhes de uma base de conhecimento
+      operationId: get_knowledge_base
+      responses:
+        '200':
+          description: Detalhes da base
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeBaseResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    delete:
+      summary: Excluir uma base de conhecimento e todos os seus documentos/chunks
+      operationId: delete_knowledge_base
+      responses:
+        '204':
+          description: Base excluída com sucesso (sem conteúdo)
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /knowledge-bases/{kb_id}/documents:
+    parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Listar documentos de uma base de conhecimento
+      operationId: list_documents
+      responses:
+        '200':
+          description: Lista de documentos pertencentes à base
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    post:
+      summary: Fazer upload de um documento para processamento e vetorização
+      operationId: upload_document
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Arquivo PDF, Markdown (.md) ou TXT (máximo 10 MB).
+      responses:
+        '201':
+          description: Documento recebido e processado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /knowledge-bases/{kb_id}/documents/{doc_id}:
+    parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Obter status e detalhes de um documento
+      operationId: get_document
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    delete:
+      summary: Remover documento e seus respectivos chunks vetoriais
+      operationId: delete_document
+      responses:
+        '204':
+          description: Documento e chunks excluídos com sucesso
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /knowledge-bases/{kb_id}/search:
+    parameters:
+      - name: kb_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Executar busca vetorial por similaridade na base de conhecimento
+      operationId: search_knowledge_base
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimilaritySearchRequest'
+      responses:
+        '200':
+          description: Chunks mais similares ranqueados por proximidade
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SimilaritySearchResult'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  schemas:
+    KnowledgeBaseCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Documentação de Engenharia"
+        description:
+          type: string
+          nullable: true
+          maxLength: 500
+          example: "Manuais técnicos e especificações de arquitetura."
+
+    KnowledgeBaseResponse:
+      type: object
+      required:
+        - id
+        - name
+        - document_count
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        document_count:
+          type: integer
+          example: 5
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DocumentResponse:
+      type: object
+      required:
+        - id
+        - knowledge_base_id
+        - filename
+        - content_type
+        - file_size_bytes
+        - status
+        - chunk_count
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        knowledge_base_id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        content_type:
+          type: string
+        file_size_bytes:
+          type: integer
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        error_message:
+          type: string
+          nullable: true
+        chunk_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    SimilaritySearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          example: "Como funciona a autenticação via OAuth2?"
+        limit:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 20
+        similarity_threshold:
+          type: number
+          format: float
+          default: 0.3
+          minimum: 0.0
+          maximum: 1.0
+
+    SimilaritySearchResult:
+      type: object
+      required:
+        - chunk_id
+        - document_id
+        - document_name
+        - chunk_index
+        - content
+        - similarity_score
+      properties:
+        chunk_id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+          format: uuid
+        document_name:
+          type: string
+        chunk_index:
+          type: integer
+        content:
+          type: string
+        similarity_score:
+          type: number
+          format: float
+          example: 0.8842
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+        - code
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+
+  responses:
+    ErrorResponse:
+      description: Erro padrão da aplicação
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Erro de validação de payload (FastAPI / Pydantic)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: array
+                items:
+                  type: object
