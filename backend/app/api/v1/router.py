@@ -1,6 +1,7 @@
 """API v1 master router aggregating all sub-routers."""
 
 from fastapi import APIRouter
+from app.api.v1.chat import router as chat_router
 from app.api.v1.documents import router as doc_router
 from app.api.v1.knowledge_bases import router as kb_router
 
@@ -15,3 +16,4 @@ async def health_check() -> dict:
 # Feature endpoints
 api_router.include_router(kb_router)
 api_router.include_router(doc_router)
+api_router.include_router(chat_router)

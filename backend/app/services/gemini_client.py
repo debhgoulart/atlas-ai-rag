@@ -1,12 +1,22 @@
-"""Client for Google Gemini API embedding generation."""
+"""Client for Google Gemini API embedding generation and conversational chat synthesis."""
 
 import asyncio
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 from google import genai
 from google.genai import types
 
 from app.core.config import settings
 from app.core.exceptions import AIServiceException
+
+
+@dataclass
+class ChatGenerationResult:
+    """Result data container for an LLM response synthesis."""
+
+    content: str
+    prompt_tokens: Optional[int]
+    completion_tokens: Optional[int]
 
 
 class GeminiEmbeddingClient:
@@ -49,10 +59,8 @@ class GeminiEmbeddingClient:
 
         client = self._get_client()
 
-        # Run embedding call in an async executor thread to maintain non-blocking I/O
         def _call_api() -> List[List[float]]:
             results: List[List[float]] = []
-            # Process in sub-batches of 50 to respect API limits
             batch_size = 50
             for i in range(0, len(texts), batch_size):
                 batch = texts[i : i + batch_size]
@@ -74,4 +82,80 @@ class GeminiEmbeddingClient:
             raise AIServiceException(
                 f"Google Gemini Embedding API error: {str(exc)}",
                 code="GEMINI_API_ERROR",
+            )
+
+
+class GeminiChatClient:
+    """Service client for generating grounded chat answers via Google Gemini Flash."""
+
+    def __init__(self, api_key: Optional[str] = None) -> None:
+        self.api_key = api_key or settings.GEMINI_API_KEY
+        self.model = settings.GEMINI_CHAT_MODEL
+        self._client: Optional[genai.Client] = None
+
+    def _get_client(self) -> genai.Client:
+        if self._client is None:
+            if not self.api_key:
+                raise AIServiceException(
+                    "GEMINI_API_KEY is not configured in environment or .env file.",
+                    code="MISSING_GEMINI_API_KEY",
+                )
+            self._client = genai.Client(api_key=self.api_key)
+        return self._client
+
+    async def generate_response(
+        self,
+        system_instruction: str,
+        contents: List[Dict[str, str]],
+        temperature: float = 0.2,
+    ) -> ChatGenerationResult:
+        """Synthesize an answer using Google Gemini."""
+        # Testing fallback if no API key is provided
+        if not self.api_key:
+            return ChatGenerationResult(
+                content="[Modo de Teste] Resposta simulada fundamentada no contexto fornecido.",
+                prompt_tokens=100,
+                completion_tokens=25,
+            )
+
+        client = self._get_client()
+
+        # Build contents structure for the Gemini SDK
+        gemini_contents = []
+        for msg in contents:
+            role = "user" if msg["role"] == "user" else "model"
+            gemini_contents.append(
+                types.Content(
+                    role=role,
+                    parts=[types.Part.from_text(text=msg["content"])],
+                )
+            )
+
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=temperature,
+        )
+
+        def _call_generate() -> ChatGenerationResult:
+            response = client.models.generate_content(
+                model=self.model,
+                contents=gemini_contents,
+                config=config,
+            )
+            usage = response.usage_metadata
+            prompt_toks = getattr(usage, "prompt_token_count", None) if usage else None
+            cand_toks = getattr(usage, "candidates_token_count", None) if usage else None
+
+            return ChatGenerationResult(
+                content=response.text or "",
+                prompt_tokens=prompt_toks,
+                completion_tokens=cand_toks,
+            )
+
+        try:
+            return await asyncio.to_thread(_call_generate)
+        except Exception as exc:
+            raise AIServiceException(
+                f"Google Gemini Chat API error: {str(exc)}",
+                code="GEMINI_CHAT_ERROR",
             )
