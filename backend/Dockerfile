@@ -24,12 +24,14 @@ WORKDIR /app
 RUN useradd -m -u 1000 appuser
 
 # Copy installed wheels and dependencies from builder stage
-COPY --from=builder /root/.local /home/appuser/.local
+COPY --chown=appuser:appuser --from=builder /root/.local /home/appuser/.local
 
 # Copy application source code and migrations
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser alembic/ ./alembic/
 COPY --chown=appuser:appuser alembic.ini .
+COPY --chown=appuser:appuser entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
 ENV PATH=/home/appuser/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
@@ -39,4 +41,4 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./entrypoint.sh"]
