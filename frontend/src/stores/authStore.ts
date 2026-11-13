@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { authService } from "@/services/authService";
 import type { LoginCredentials, RegisterData, User } from "@/types";
+import router from "@/router";
 
 export const useAuthStore = defineStore("auth", () => {
   const token = ref<string | null>(localStorage.getItem("atlas_auth_token"));
@@ -48,6 +49,9 @@ export const useAuthStore = defineStore("auth", () => {
     token.value = null;
     user.value = null;
     localStorage.removeItem("atlas_auth_token");
+    if (router.currentRoute.value.name !== "login") {
+      router.push({ name: "login" });
+    }
   }
 
   return {

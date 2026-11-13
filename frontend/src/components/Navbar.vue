@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { Bot, Database, Github, Sun, Moon, KeyRound, LogIn, LogOut, User as UserIcon } from "lucide-vue-next";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { useThemeStore } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useGeminiCredentialStore } from "@/stores/geminiCredentialStore";
 import AuthModal from "@/components/AuthModal.vue";
 
+const route = useRoute();
+const router = useRouter();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const credentialStore = useGeminiCredentialStore();
@@ -14,12 +16,16 @@ const credentialStore = useGeminiCredentialStore();
 const isAuthModalOpen = ref(false);
 
 function openAuth() {
-  isAuthModalOpen.value = true;
+  router.push({ name: "login" });
+}
+
+function handleLogout() {
+  authStore.logout();
 }
 
 function handleKeyClick() {
   if (!authStore.isAuthenticated) {
-    isAuthModalOpen.value = true;
+    router.push({ name: "login" });
   } else {
     credentialStore.openModal();
   }
@@ -45,7 +51,7 @@ function handleKeyClick() {
           </RouterLink>
 
           <!-- Navigation Links -->
-          <nav class="hidden md:flex items-center gap-1">
+          <nav v-if="authStore.isAuthenticated" class="hidden md:flex items-center gap-1">
             <RouterLink
               to="/"
               class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-100/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-900 transition-colors"
@@ -61,6 +67,7 @@ function handleKeyClick() {
         <div class="flex items-center gap-2 sm:gap-3">
           <!-- Gemini Key Status Button -->
           <button
+            v-if="authStore.isAuthenticated"
             @click="handleKeyClick"
             type="button"
             class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all cursor-pointer"
@@ -92,7 +99,7 @@ function handleKeyClick() {
               <span class="max-w-[120px] truncate">{{ authStore.user?.email || 'Minha Conta' }}</span>
             </div>
             <button
-              @click="authStore.logout()"
+              @click="handleLogout"
               type="button"
               class="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-rose-400 dark:hover:bg-zinc-900 rounded-lg transition-colors cursor-pointer"
               title="Sair da Conta"
@@ -101,7 +108,7 @@ function handleKeyClick() {
             </button>
           </div>
           <button
-            v-else
+            v-else-if="route.name !== 'login'"
             @click="openAuth"
             type="button"
             class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-2xs transition-colors cursor-pointer"

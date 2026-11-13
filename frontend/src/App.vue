@@ -13,12 +13,14 @@ const credentialStore = useGeminiCredentialStore();
 
 onMounted(async () => {
   themeStore.initTheme();
-  await authStore.initAuth();
-  await credentialStore.fetchStatus();
 
-  // If user is authenticated but has no key configured or key is invalid, prompt configuration
-  if (authStore.isAuthenticated && (credentialStore.isNotConfigured || credentialStore.isInvalid)) {
-    credentialStore.openModal();
+  // If user is authenticated, verify key configuration status
+  if (authStore.isAuthenticated) {
+    await credentialStore.fetchStatus();
+
+    if (credentialStore.isNotConfigured || credentialStore.isInvalid) {
+      credentialStore.openModal();
+    }
   }
 });
 </script>

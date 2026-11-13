@@ -1,5 +1,6 @@
 import axios, { type AxiosError } from "axios";
 import type { ApiError } from "@/types";
+import router from "@/router";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 
@@ -24,6 +25,14 @@ apiClient.interceptors.response.use(
   (error: AxiosError<ApiError>) => {
     let message = "Ocorreu um erro inesperado ao se comunicar com o servidor.";
     let code = "UNKNOWN_ERROR";
+
+    // Auto-logout and redirect when session token expires or is rejected (except on login attempt)
+    if (error.response?.status === 401 && !error.config?.url?.includes("/auth/login")) {
+      localStorage.removeItem("atlas_auth_token");
+      if (router.currentRoute.value.name !== "login") {
+        router.push({ name: "login" });
+      }
+    }
 
     if (error.response?.data) {
       const data = error.response.data;
