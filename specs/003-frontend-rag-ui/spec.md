@@ -74,6 +74,63 @@ As a user, I want a sidebar listing my conversation sessions within a knowledge 
 
 ---
 
+### User Story 5 - True Black OLED Dark/Light Mode with Interactive Toggle (Priority: P1)
+
+As a user, I want an interactive button in the navigation bar to switch between a clean white Light Mode and an intense, pure black ("todo preto mesmo" / True Black OLED) Dark Mode, with preferences persisted across page refreshes, so that I can choose the optimal contrast and visual style for my environment.
+
+**Why this priority**: Directly requested to offer complete user control over theme preference with a high-contrast pure black aesthetic in dark mode.
+
+**Independent Test**: Load the application in a browser, click the theme toggle button in the Navbar to switch between Light Mode and Dark Mode; verify that Light Mode renders pure white/slate-50 surfaces, and Dark Mode renders true pitch black (`#000000` / `bg-black` and `bg-zinc-950`) surfaces with high-contrast text and borders; reload the page to confirm that the selected theme persists in `localStorage`.
+
+**Acceptance Scenarios**:
+1. **Given** the Navbar, **When** viewed on desktop or mobile, **Then** an interactive Sun/Moon theme toggle button is visible and accessible.
+2. **Given** the user clicks the theme toggle button, **When** switching to Dark Mode, **Then** the interface transitions immediately to pure black surfaces (`bg-black`, `bg-zinc-950`, `text-white`, `border-zinc-800`), with zero intermediate light/gray artifacts.
+3. **Given** the user clicks the theme toggle button, **When** switching to Light Mode, **Then** the interface transitions immediately to clean white surfaces (`bg-white`, `bg-slate-50`, `text-slate-900`, `border-slate-200`).
+4. **Given** a selected theme, **When** the page is reloaded, **Then** the chosen theme preference is retrieved from `localStorage` and applied without flashes of unstyled content.
+
+---
+
+### User Story 6 - Iconography Refinement (Sparkles Removal) (Priority: P2)
+
+As a user, I want the interface to replace any decorative sparkle/shine icons with sober, professional domain icons, so that the tool communicates technical rigor rather than playful generative gimmicks.
+
+**Why this priority**: Direct design refinement requested by the user.
+
+**Independent Test**: Inspect the entire UI (Navbar logo, Assistant message avatar, empty state illustrations, thinking indicators) and verify that zero `Sparkles` icons are rendered, replaced by technical icons such as `Bot`, `Cpu`, `BrainCircuit`, or `MessageSquare`.
+
+**Acceptance Scenarios**:
+1. **Given** the Navbar, **When** the brand logo is displayed, **Then** a sober icon (`Bot` or `BrainCircuit`) is rendered instead of `Sparkles`.
+2. **Given** an assistant message or thinking indicator, **When** displayed in the chat, **Then** a `Bot` or `Cpu` icon is used.
+
+---
+
+### User Story 7 - Zero-State Database Sanitization (Priority: P1)
+
+As a developer, I want the local PostgreSQL database to be completely sanitized and zeroed out (empty tables), so that the application can be demonstrated from a pristine initial state with zero leftover test data.
+
+**Why this priority**: Required for reliable portfolio demos and onboarding from scratch.
+
+**Independent Test**: Execute the database sanitization command/script, query all tables (`knowledge_bases`, `documents`, `document_chunks`, `chat_sessions`, `chat_messages`), and verify that all row counts return 0 while preserving the schema and `vector` extension.
+
+**Acceptance Scenarios**:
+1. **Given** a database populated with test records, **When** the cleanup routine runs, **Then** all tables are truncated with cascading dependencies handled cleanly.
+
+---
+
+### User Story 8 - Zero-Friction Quickstart Script with Gemini Key Setup (Priority: P1)
+
+As a developer or evaluator, I want a single executable shell script (`start.sh`) that provides interactive guidance on how to obtain a free Gemini API key, allows pasting it directly to configure `.env`, orchestrates docker services, runs migrations, and launches both frontend and backend concurrently, so that running the application from scratch requires zero manual boilerplate.
+
+**Why this priority**: Significantly simplifies onboarding, project evaluation, and demonstration.
+
+**Independent Test**: Run `./start.sh` in a fresh environment; observe the prompt explaining how to generate a key at Google AI Studio, paste or accept the key, observe Docker container startup, migrations execution, and concurrent launch of Backend (port 8000) and Frontend (port 5173).
+
+**Acceptance Scenarios**:
+1. **Given** a missing or incomplete `.env`, **When** `./start.sh` executes, **Then** it presents the Google AI Studio URL, instructions, and an interactive prompt to paste the key directly.
+2. **Given** the key configured, **When** the script continues, **Then** it starts `docker compose up -d db`, verifies health, executes `alembic upgrade head`, and launches both frontend and backend with clear URLs and graceful Ctrl+C termination.
+
+---
+
 ## Edge Cases
 
 - **Network Offline or Backend Unreachable**: When the frontend cannot communicate with the API, an unobtrusive banner or toast notification must appear: *"Não foi possível conectar ao servidor. Verifique se o backend está em execução."*

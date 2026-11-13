@@ -74,20 +74,40 @@ Certifique-se de ter instalados em seu ambiente:
 
 ---
 
-### Passo 1: Clonar o Repositório e Configurar Variáveis de Ambiente
+### ⚡ Opção 1: Inicialização Rápida Interativa (Recomendado)
+
+O projeto possui um script orquestrador interativo que automatiza todo o processo a partir do zero:
 
 ```bash
+# 1. Clonar o repositório
 git clone git@github.com:debhgoulart/atlas-ai-rag.git
 cd atlas-ai-rag
 
-# Criar arquivo de configuração local a partir do template
-cp .env.example .env
+# 2. Executar o script inicializador
+./start.sh
 ```
 
-Abra o arquivo `.env` e configure sua chave de API do Gemini:
-```ini
-GEMINI_API_KEY=sua_chave_gemini_aqui
+**O que o script `./start.sh` faz automaticamente:**
+1. Apresenta instruções claras de como gerar sua chave gratuita no Google AI Studio.
+2. Permite colar a chave diretamente no terminal para gravar no `.env`.
+3. Sobe o container Docker do PostgreSQL com a extensão `pgvector`.
+4. Aplica todas as migrações do banco com o Alembic.
+5. Oferece a opção de sanitizar o banco para iniciar em estado 100% zerado.
+6. Inicia o Backend FastAPI (`http://localhost:8000/docs`) e o Frontend Vue 3 (`http://localhost:5173`).
+7. Encerra todos os serviços de forma graciosa ao pressionar `Ctrl + C`.
+
+---
+
+### 🛠️ Opção 2: Execução Manual Passo a Passo
+
+Caso prefira iniciar cada serviço individualmente:
+
+#### Passo 1: Configurar Variáveis de Ambiente
+
+```bash
+cp .env.example .env
 ```
+Abra o `.env` e configure sua `GEMINI_API_KEY`.
 
 ---
 
@@ -174,6 +194,18 @@ pytest tests/ -v
 
 - **Testes Unitários**: Validação dos parsers de documentos (PDF, MD, TXT) e algoritmo de chunking recursivo com overlap.
 - **Testes de Integração**: Testes de ponta a ponta dos endpoints de Base de Conhecimento, Ingestão de Documentos, Busca Vetorial e Chat RAG com preservação de histórico e guardrails anti-alucinação.
+
+---
+
+## 🧹 Como Limpar / Zerar a Base de Dados (Zero-State)
+
+Para reiniciar o banco em estado completamente limpo (sem documentos ou conversas de teste), preservando as migrações e a extensão `pgvector`:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m app.scripts.reset_db
+```
 
 ---
 

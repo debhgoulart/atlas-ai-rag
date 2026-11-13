@@ -114,6 +114,82 @@ description: "Task list for feature 003-frontend-rag-ui implementation"
 
 ---
 
+## Phase 8: User Story 5 - Dark Mode Theme (Priority: P1)
+
+**Goal**: Implementar tema escuro moderno e imersivo (Dark Mode) em toda a aplicação frontend, utilizando paleta dark slate com alto contraste e acabamento profissional.
+
+**Independent Test**: Navegar pelas páginas da aplicação (`/` e `/knowledge-bases/:id`), abrir modais, dropzone e conversas, validando que todas as superfícies utilizam fundos escuros (`bg-slate-950`, `bg-slate-900`), bordas sutis (`border-slate-800`) e tipografia de alto contraste (`text-slate-100`, `text-slate-300`).
+
+- [x] **T029** [P] [US5] Configurar suporte a Dark Mode por padrão no Tailwind e definir estilos base escuros em `frontend/tailwind.config.js` e `frontend/src/assets/main.css`
+- [x] **T030** [P] [US5] Atualizar a barra de navegação com superfícies escuras, bordas sutis e tipografia clara em `frontend/src/components/Navbar.vue`
+- [x] **T031** [P] [US5] Atualizar Dashboard e cartões de bases de conhecimento para estilo dark com efeitos de hover em `frontend/src/views/DashboardView.vue` e `frontend/src/components/KnowledgeBaseCard.vue`
+- [x] **T032** [P] [US5] Atualizar modal de criação de base de conhecimento com backdrop dark, inputs escuros e anéis de foco em `frontend/src/components/CreateKBModal.vue`
+- [x] **T033** [P] [US5] Atualizar tela de detalhes da base, dropzone de arquivos e tabela de documentos com tema dark em `frontend/src/views/KnowledgeBaseDetailView.vue`, `frontend/src/components/FileDropzone.vue` e `frontend/src/components/DocumentTable.vue`
+- [x] **T034** [P] [US5] Atualizar barra lateral de sessões, balões de chat, barra de input e modal de citação para tema dark em `frontend/src/components/ChatSidebar.vue`, `frontend/src/components/MessageBubble.vue`, `frontend/src/components/ChatInputBar.vue` e `frontend/src/components/CitationModal.vue`
+
+---
+
+## Phase 9: User Story 6 - Iconography Refinement (Sparkles Removal) (Priority: P2)
+
+**Goal**: Remover todas as instâncias do ícone decorativo de brilho (`Sparkles`), substituindo-os por ícones técnicos e sóbrios de engenharia (`Bot`, `BrainCircuit`, `Cpu`, `MessageSquare`).
+
+**Independent Test**: Inspecionar os componentes Vue e telas (`Navbar.vue`, `MessageBubble.vue`, `KnowledgeBaseDetailView.vue`, `DashboardView.vue`) e certificar que nenhum ícone `Sparkles` é renderizado.
+
+- [x] **T035** [P] [US6] Substituir ícone de brilho no logotipo da barra de navegação por Bot ou BrainCircuit em `frontend/src/components/Navbar.vue`
+- [x] **T036** [P] [US6] Substituir ícone de brilho no avatar de resposta do assistente por Bot ou Cpu em `frontend/src/components/MessageBubble.vue`
+- [x] **T037** [P] [US6] Substituir ícone de brilho nos estados vazios de chat e indicadores de carregamento por MessageSquare ou BrainCircuit em `frontend/src/views/KnowledgeBaseDetailView.vue` e `frontend/src/views/DashboardView.vue`
+
+---
+
+## Phase 10: User Story 7 - Zero-State Database Sanitization (Priority: P1)
+
+**Goal**: Garantir que a base de dados PostgreSQL esteja completamente zerada (tabelas vazias sem registros de teste), preservando as extensões (`vector`) e as migrações estruturais do Alembic.
+
+**Independent Test**: Executar a rotina de sanitização, inspecionar as tabelas (`knowledge_bases`, `documents`, `document_chunks`, `chat_sessions`, `chat_messages`) e validar contagem igual a 0.
+
+- [x] **T038** [US7] Criar script Python de limpeza e truncagem segura de tabelas com CASCADE em `backend/app/scripts/reset_db.py`
+- [x] **T039** [US7] Executar limpeza das tabelas do banco de dados para garantir estado zero inicial
+
+---
+
+## Phase 11: User Story 8 - Automated Zero-Friction Quickstart Script (Priority: P1)
+
+**Goal**: Criar script shell interativo na raiz (`start.sh`) que orienta na criação da chave Gemini, permite colar a chave para configurar `.env`, sobe o Docker Compose, roda migrações, oferece opção de zerar banco e executa frontend e backend com parada limpa.
+
+**Independent Test**: Executar `./start.sh` no terminal a partir do zero e validar todo o fluxo interativo, instruções do Google AI Studio, prompt de cola de chave e inicialização simultânea dos serviços.
+
+- [x] **T040** [US8] Implementar script interativo com menu explicativo de geração de chave Gemini e prompt para colar a chave em `start.sh`
+- [x] **T041** [US8] Configurar inicialização automatizada de containers Docker, migrações Alembic, servidores locais e tratamento de encerramento gracioso via SIGINT em `start.sh`
+- [x] **T042** [P] [US8] Atualizar documentação de execução rápida no `README.md` destacando o script `start.sh`
+
+---
+
+## Phase 12: Polish & Verification
+
+**Purpose**: Verificação cruzada de compilação, integridade de tipos e testes automatizados.
+
+- [x] **T043** [P] Validar compilação estática do frontend Vue/TypeScript com `npm run build` em `frontend/`
+- [x] **T044** Executar suíte completa de testes automatizados com `pytest` em `backend/tests/`
+
+---
+
+## Phase 13: User Story 9 - Interactive Theme Toggle & True Black OLED Theme (Priority: P1)
+
+**Goal**: Implementar botão interativo na barra de navegação para alternar entre Modo Claro (branco limpo) e Modo Escuro (preto absoluto / True Black OLED `#000000`), com persistência da preferência do usuário em `localStorage` e ausência de flashes ao recarregar a página.
+
+**Independent Test**: Abrir a aplicação no navegador, clicar no botão Sol/Lua na Navbar e observar a transição imediata entre Modo Claro (branco) e Modo Escuro (preto puro `bg-black` e `bg-zinc-950`). Recarregar a página para certificar que a preferência selecionada persiste sem flicker.
+
+- [x] **T045** [P] [US9] Implementar loja Pinia e gerenciador de tema com persistência em localStorage e toggle da classe `dark` no DOM em `frontend/src/stores/themeStore.ts`
+- [x] **T046** [P] [US9] Inserir script inline anti-flicker no `<head>` para carregar o tema salvo antes do primeiro paint em `frontend/index.html`
+- [x] **T047** [P] [US9] Implementar botão de alternância de tema (Sol/Lua) e estilização dual-theme (branco no claro, preto puro no escuro) em `frontend/src/components/Navbar.vue`
+- [x] **T048** [P] [US9] Refatorar layout raiz e scrollbars para dual-theme com suporte a fundo preto absoluto no modo escuro em `frontend/src/App.vue` e `frontend/src/assets/main.css`
+- [x] **T049** [P] [US9] Adaptar Dashboard e cartões de bases com classes dual-theme (branco no claro, preto puro `bg-black`/`bg-zinc-950` no escuro) em `frontend/src/views/DashboardView.vue` e `frontend/src/components/KnowledgeBaseCard.vue`
+- [x] **T050** [P] [US9] Adaptar detalhes da base, dropzone, tabela de documentos e modal de criação com classes dual-theme em `frontend/src/views/KnowledgeBaseDetailView.vue`, `frontend/src/components/FileDropzone.vue`, `frontend/src/components/DocumentTable.vue` e `frontend/src/components/CreateKBModal.vue`
+- [x] **T051** [P] [US9] Adaptar sidebar de chat, balões de mensagem, barra de envio e modal de citação com classes dual-theme em `frontend/src/components/ChatSidebar.vue`, `frontend/src/components/MessageBubble.vue`, `frontend/src/components/ChatInputBar.vue` e `frontend/src/components/CitationModal.vue`
+- [x] **T052** [P] Validar compilação estática do frontend Vue/TypeScript com `npm run build` em `frontend/`
+
+---
+
 ## Dependencies & Execution Order
 
 ```mermaid
@@ -123,5 +199,28 @@ flowchart TD
     US1 --> US2["Phase 4: US2 Document Ingestion (T015-T018)"]
     US2 --> US3["Phase 5: US3 Interactive Chat & Citations (T019-T024)"]
     US3 --> US4["Phase 6: US4 Multi-Session Sidebar (T025-T026)"]
-    US4 --> Polish["Phase 7: Polish & Dockerfile (T027-T028)"]
+    US4 --> Polish1["Phase 7: Polish & Dockerfile (T027-T028)"]
+    Polish1 --> US5["Phase 8: US5 Dark Mode Theme (T029-T034)"]
+    Polish1 --> US6["Phase 9: US6 Iconography Refinement (T035-T037)"]
+    Polish1 --> US7["Phase 10: US7 Database Sanitization (T038-T039)"]
+    US7 --> US8["Phase 11: US8 Quickstart Script (T040-T042)"]
+    US5 --> Verification["Phase 12: Verification & Build (T043-T044)"]
+    US6 --> Verification
+    US8 --> Verification
+    Verification --> US9["Phase 13: US9 Theme Toggle & True Black OLED (T045-T052)"]
+```
+
+---
+
+## Parallel Execution Opportunities
+
+```bash
+# Execução paralela do Dual-Theme (arquivos desacoplados):
+Task: "T045 [P] [US9] themeStore.ts"
+Task: "T046 [P] [US9] index.html"
+Task: "T047 [P] [US9] Navbar.vue com botão Sol/Lua"
+Task: "T048 [P] [US9] App.vue e main.css"
+Task: "T049 [P] [US9] DashboardView.vue e KnowledgeBaseCard.vue"
+Task: "T050 [P] [US9] DetailView, Dropzone, DocumentTable e CreateKBModal"
+Task: "T051 [P] [US9] ChatSidebar, MessageBubble, ChatInputBar e CitationModal"
 ```
