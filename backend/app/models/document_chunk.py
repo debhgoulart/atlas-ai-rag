@@ -45,7 +45,7 @@ class DocumentChunk(Base, TimestampMixin):
         Text,
         nullable=False,
     )
-    # Dense vector embedding using pgvector extension (768 dimensions for Gemini text-embedding-004)
+    # Dense vector embedding using pgvector extension (768 dimensions for Gemini gemini-embedding-001)
     embedding = mapped_column(
         Vector(settings.EMBEDDING_DIMENSION),
         nullable=False,

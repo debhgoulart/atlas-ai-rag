@@ -155,6 +155,8 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
         kb_id: uuid.UUID,
         session_id: uuid.UUID,
         user_content: str,
+        api_key: Optional[str] = None,
+        user_id: Optional[uuid.UUID] = None,
     ) -> ChatMessageResponse:
         """Process user message through vector retrieval and synthesis, persisting both turns."""
         start_time = time.perf_counter()
@@ -186,6 +188,7 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
             query=user_content,
             limit=5,
             similarity_threshold=0.0,
+            api_key=api_key,
         )
 
         # 4. Build context passages and citations list
@@ -229,12 +232,21 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
         for m in recent_messages:
             conversation_contents.append({"role": m.role, "content": m.content})
 
-        # 6. Call Gemini Chat Client
-        gen_result = await self.chat_client.generate_response(
-            system_instruction=system_instruction,
-            contents=conversation_contents,
-            temperature=0.2,
-        )
+        # 6. Call Gemini Chat Client with user's key
+        chat_client = GeminiChatClient(api_key=api_key) if api_key else self.chat_client
+        try:
+            gen_result = await chat_client.generate_response(
+                system_instruction=system_instruction,
+                contents=conversation_contents,
+                temperature=0.2,
+            )
+        except Exception as exc:
+            err_str = str(exc).lower()
+            if any(term in err_str for term in ["api_key", "unauthorized", "forbidden", "400", "403"]):
+                if user_id:
+                    from app.services.gemini_credential_service import GeminiCredentialService
+                    await GeminiCredentialService().mark_key_invalid(db=db, user_id=user_id)
+            raise
 
         latency_ms = int((time.perf_counter() - start_time) * 1000)
 

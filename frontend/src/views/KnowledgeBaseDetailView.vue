@@ -79,8 +79,33 @@ async function handleDeleteSession(sessionId: string) {
 
 <template>
   <div class="flex-1 flex flex-col h-[calc(100vh-64px)] overflow-hidden">
-    <!-- Subheader: Navigation & Title -->
-    <div class="bg-white dark:bg-black border-b border-slate-200 dark:border-zinc-850 px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shrink-0 transition-colors">
+    <!-- Base Not Found State -->
+    <div
+      v-if="!kbStore.isLoading && !kbStore.currentKnowledgeBase"
+      class="flex-1 flex flex-col items-center justify-center p-8 text-center"
+    >
+      <div class="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center text-amber-600 dark:text-amber-400 mb-4">
+        <Database class="w-8 h-8" />
+      </div>
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+        Base de Conhecimento não encontrada
+      </h2>
+      <p class="text-sm text-slate-500 dark:text-zinc-400 max-w-md mb-6">
+        Esta base de conhecimento não existe mais no banco de dados (pode ter sido excluída ou reiniciada ao rodar a sanitização do banco).
+      </p>
+      <RouterLink
+        to="/"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-xs"
+      >
+        <ArrowLeft class="w-4 h-4" />
+        <span>Ir para o Dashboard de Bases</span>
+      </RouterLink>
+    </div>
+
+    <!-- Normal Loaded State -->
+    <template v-else>
+      <!-- Subheader: Navigation & Title -->
+      <div class="bg-white dark:bg-black border-b border-slate-200 dark:border-zinc-850 px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 shrink-0 transition-colors">
       <div class="flex items-center gap-3">
         <RouterLink
           to="/"
@@ -236,5 +261,6 @@ async function handleDeleteSession(sessionId: string) {
       :citation="selectedCitation"
       @close="selectedCitation = null"
     />
+    </template>
   </div>
 </template>

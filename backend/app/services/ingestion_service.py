@@ -38,6 +38,7 @@ class IngestionService:
         filename: str,
         content_type: str,
         file_bytes: bytes,
+        api_key: Optional[str] = None,
     ) -> DocumentResponse:
         """Validate, extract, chunk, embed, and persist an uploaded document."""
         # 1. Verify Knowledge Base exists
@@ -78,7 +79,8 @@ class IngestionService:
 
             # 6. Generate dense vector embeddings via Gemini API
             chunk_texts = [c.content for c in text_chunks]
-            embeddings = await self.embedding_client.generate_embeddings_batch(
+            embedder = GeminiEmbeddingClient(api_key=api_key) if api_key else self.embedding_client
+            embeddings = await embedder.generate_embeddings_batch(
                 chunk_texts, task_type="RETRIEVAL_DOCUMENT"
             )
 
@@ -158,6 +160,7 @@ class IngestionService:
         query: str,
         limit: int = 5,
         similarity_threshold: float = 0.0,
+        api_key: Optional[str] = None,
     ) -> List[SimilaritySearchResult]:
         """Perform cosine similarity search against pgvector chunks."""
         # 1. Verify knowledge base exists
@@ -167,7 +170,8 @@ class IngestionService:
             raise EntityNotFoundException("KnowledgeBase", kb_id)
 
         # 2. Generate embedding for search query (RETRIEVAL_QUERY task type)
-        query_embedding = await self.embedding_client.generate_embedding(
+        embedder = GeminiEmbeddingClient(api_key=api_key) if api_key else self.embedding_client
+        query_embedding = await embedder.generate_embedding(
             query, task_type="RETRIEVAL_QUERY"
         )
 

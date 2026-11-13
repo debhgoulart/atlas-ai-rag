@@ -49,7 +49,7 @@ if [ -z "$CURRENT_KEY" ] || [ "$CURRENT_KEY" = "your_gemini_api_key_here" ]; the
     echo -e "\n${CLR_YELLOW}┌────────────────────────────────────────────────────────────────────┐${CLR_RESET}"
     echo -e "${CLR_YELLOW}│          COMO OBTER SUA CHAVE DE API GRATUITA DO GEMINI            │${CLR_RESET}"
     echo -e "${CLR_YELLOW}├────────────────────────────────────────────────────────────────────┤${CLR_RESET}"
-    echo -e "│ O Atlas AI utiliza os modelos Gemini 2.5 Flash e text-embedding-004│"
+    echo -e "│ O Atlas AI utiliza os modelos Gemini 2.5 Flash e gemini-embedding-001│"
     echo -e "│ para o pipeline semântico de RAG e citação de fontes.              │"
     echo -e "│                                                                    │"
     echo -e "│ Passos para gerar sua chave (100% gratuita):                       │"
@@ -83,6 +83,15 @@ if [ -z "$CURRENT_KEY" ] || [ "$CURRENT_KEY" = "your_gemini_api_key_here" ]; the
     fi
 else
     echo -e "${CLR_GREEN}  [✓] Chave GEMINI_API_KEY já configurada no .env.${CLR_RESET}"
+fi
+
+# Garantir existência da chave mestra de criptografia no .env
+if ! grep -q "^CREDENTIALS_ENCRYPTION_KEY=" .env 2>/dev/null; then
+    NEW_ENCRYPTION_KEY=$(python3 -c "import secrets, base64; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())" 2>/dev/null)
+    if [ -n "$NEW_ENCRYPTION_KEY" ]; then
+        echo "CREDENTIALS_ENCRYPTION_KEY=${NEW_ENCRYPTION_KEY}" >> .env
+        echo -e "${CLR_GREEN}  [✓] Nova chave mestra CREDENTIALS_ENCRYPTION_KEY gerada e salva no .env.${CLR_RESET}"
+    fi
 fi
 
 # ------------------------------------------------------------------------------

@@ -1,15 +1,20 @@
 """Configuration settings for Atlas AI Backend using Pydantic Settings."""
 
-from typing import List
+from pathlib import Path
+from typing import List, Tuple
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Determine project root and backend dir for reliably loading .env
+BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+ROOT_DIR = BACKEND_DIR.parent
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables and .env file."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(str(ROOT_DIR / ".env"), str(BACKEND_DIR / ".env"), ".env", "../.env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
@@ -35,11 +40,26 @@ class Settings(BaseSettings):
         description="Async SQLAlchemy database connection URL",
     )
 
+    # Security & Encryption Configuration
+    CREDENTIALS_ENCRYPTION_KEY: str = Field(
+        default="",
+        description="Master encryption key (Fernet base64 32-byte key) for symmetric encryption of user API keys",
+    )
+    SECRET_KEY: str = Field(
+        default="dev-jwt-secret-key-change-in-production-for-atlas-ai",
+        description="Secret key for signing and verifying JWT tokens",
+    )
+    JWT_ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        default=60 * 24 * 7, description="Access token expiration window in minutes (7 days)"
+    )
+
     # Google Gemini API Configuration
     GEMINI_API_KEY: str = Field(default="", description="Google Gemini API Key")
+    GEMINI_API_VERSION: str = Field(default="v1beta", description="API version for Google Gemini requests")
     GEMINI_CHAT_MODEL: str = Field(default="gemini-2.5-flash", description="Model for conversational RAG")
     GEMINI_EMBEDDING_MODEL: str = Field(
-        default="text-embedding-004", description="Official Google Gemini embedding model"
+        default="gemini-embedding-001", description="Official Google Gemini embedding model"
     )
     EMBEDDING_DIMENSION: int = Field(default=768, description="Vector dimension size for embeddings")
 

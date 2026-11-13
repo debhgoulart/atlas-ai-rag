@@ -5,7 +5,9 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_current_user, get_user_gemini_api_key
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.chat import (
     ChatMessageResponse,
     ChatSessionCreate,
@@ -88,6 +90,8 @@ async def send_message(
     kb_id: uuid.UUID,
     chat_id: uuid.UUID,
     payload: SendMessageRequest,
+    current_user: User = Depends(get_current_user),
+    user_api_key: str = Depends(get_user_gemini_api_key),
     db: AsyncSession = Depends(get_db),
 ) -> ChatMessageResponse:
     """Send user question, retrieve vector context from pgvector, and synthesize answer with source citations."""
@@ -96,4 +100,6 @@ async def send_message(
         kb_id=kb_id,
         session_id=chat_id,
         user_content=payload.content,
+        api_key=user_api_key,
+        user_id=current_user.id,
     )

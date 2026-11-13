@@ -7,7 +7,7 @@ O **Atlas AI** é uma aplicação web Full Stack moderna de gerenciamento de bas
 ## 🎯 Objetivos do Projeto
 
 - **Criação e Gestão de Bases de Conhecimento**: Organização de coleções temáticas de documentos por domínios.
-- **Pipeline de Ingestão e Vetorização**: Upload de documentos (PDF, Markdown, TXT), extração de texto, chunking semântico com overlap e geração de embeddings com o Google Gemini (`text-embedding-004`).
+- **Pipeline de Ingestão e Vetorização**: Upload de documentos (PDF, Markdown, TXT), extração de texto, chunking semântico com overlap e geração de embeddings com o Google Gemini (`gemini-embedding-001`, 768 dimensões via MRL).
 - **Armazenamento Vetorial Escalável**: Indexação e busca por similaridade de cosseno utilizando PostgreSQL com a extensão `pgvector`.
 - **Chatbot Contextualizado e Confiável**: Síntese de respostas via LLM (Google Gemini) estritamente fundamentadas no contexto dos documentos ingeridos, com guardrails contra alucinações.
 - **Transparência e Citação de Fontes**: Apresentação de metadados dos chunks de origem (documento, página, trecho e pontuação de relevância) para cada resposta gerada.
@@ -58,7 +58,7 @@ atlas-ai-rag/
 
 ### Inteligência Artificial & RAG
 - **LLM**: Google Gemini API (`gemini-2.5-flash` / `gemini-1.5-flash`)
-- **Embeddings**: Google Gemini `text-embedding-004` (vetores densos de 768 dimensões)
+- **Embeddings**: Google Gemini `gemini-embedding-001` (vetores densos de 768 dimensões com suporte a Matryoshka Representation Learning)
 - **Técnica RAG**: Chunking semântico com preservação de parágrafos, similaridade de cosseno via pgvector (`<=>`), injeção dinâmica de contexto com restrições anti-alucinação.
 
 ---
@@ -231,7 +231,28 @@ python -m app.scripts.reset_db
 Para compreender as motivações técnicas das escolhas adotadas neste projeto, consulte:
 - [ADR 0001: Estratégia de pgvector e Chunking](docs/adr/0001-pgvector-and-chunking-strategy.md)
 - [ADR 0002: Engenharia de Prompt e Anti-Alucinação](docs/adr/0002-prompt-engineering-and-anti-hallucination.md)
+- [ADR 0003: Criptografia de Credenciais e Isolamento de Chaves](docs/adr/0003-user-credentials-encryption-and-isolation.md)
 - [Constitution do Projeto](.specify/memory/constitution.md)
+
+---
+
+## ☁️ Deploy em Produção (Render + Vercel)
+
+O Atlas AI foi arquitetado para desacoplamento completo entre Frontend e Backend em produção:
+
+### 1. Backend no Render (Web Service Docker/Python)
+Configure as seguintes variáveis de ambiente no painel do **Render**:
+- `DATABASE_URL`: Connection string do PostgreSQL com suporte à extensão `pgvector`.
+- `SECRET_KEY`: Chave secreta de alta entropia para assinatura dos tokens JWT Bearer.
+- `CREDENTIALS_ENCRYPTION_KEY`: Chave mestra Fernet de 32 bytes base64 para criptografia simétrica das chaves dos usuários. (Gere com: `python backend/app/scripts/generate_encryption_key.py`).
+- `BACKEND_CORS_ORIGINS`: JSON array com a URL da sua aplicação no Vercel, ex: `["https://seu-atlas-ai.vercel.app"]`.
+- `ENVIRONMENT`: `production`.
+
+### 2. Frontend na Vercel (Vite Static SPA)
+Configure a seguinte variável de ambiente no painel da **Vercel**:
+- `VITE_API_BASE_URL`: URL pública da sua API no Render com sufixo `/api/v1` (ex: `https://atlas-ai-backend.onrender.com/api/v1`).
+
+> **Segurança de Credenciais**: As Gemini API Keys dos usuários NUNCA são configuradas no Render ou na Vercel; cada usuário cadastra sua própria chave criptografada via interface ou API.
 
 ---
 

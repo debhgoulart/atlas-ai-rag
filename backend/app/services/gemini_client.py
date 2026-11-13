@@ -36,7 +36,10 @@ class GeminiEmbeddingClient:
                     "GEMINI_API_KEY is not configured in environment or .env file.",
                     code="MISSING_GEMINI_API_KEY",
                 )
-            self._client = genai.Client(api_key=self.api_key)
+            self._client = genai.Client(
+                api_key=self.api_key,
+                http_options=types.HttpOptions(api_version=settings.GEMINI_API_VERSION),
+            )
         return self._client
 
     async def generate_embedding(self, text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> List[float]:
@@ -100,7 +103,10 @@ class GeminiChatClient:
                     "GEMINI_API_KEY is not configured in environment or .env file.",
                     code="MISSING_GEMINI_API_KEY",
                 )
-            self._client = genai.Client(api_key=self.api_key)
+            self._client = genai.Client(
+                api_key=self.api_key,
+                http_options=types.HttpOptions(api_version=settings.GEMINI_API_VERSION),
+            )
         return self._client
 
     async def generate_response(

@@ -5,6 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_user_gemini_api_key
 from app.db.session import get_db
 from app.schemas.document import DocumentResponse
 from app.schemas.search import SimilaritySearchRequest, SimilaritySearchResult
@@ -24,6 +25,7 @@ _ingestion_service = IngestionService()
 async def upload_document(
     kb_id: uuid.UUID,
     file: UploadFile = File(..., description="PDF, TXT, or Markdown document (max 10 MB)"),
+    user_api_key: str = Depends(get_user_gemini_api_key),
     db: AsyncSession = Depends(get_db),
 ) -> DocumentResponse:
     """Upload a document, extract text, generate chunked embeddings, and index into pgvector."""
@@ -37,6 +39,7 @@ async def upload_document(
         filename=filename,
         content_type=content_type,
         file_bytes=file_bytes,
+        api_key=user_api_key,
     )
 
 
@@ -92,6 +95,7 @@ async def delete_document(
 async def search_knowledge_base(
     kb_id: uuid.UUID,
     payload: SimilaritySearchRequest,
+    user_api_key: str = Depends(get_user_gemini_api_key),
     db: AsyncSession = Depends(get_db),
 ) -> List[SimilaritySearchResult]:
     """Perform cosine similarity vector retrieval against document chunks in the knowledge base."""
@@ -101,4 +105,5 @@ async def search_knowledge_base(
         query=payload.query,
         limit=payload.limit,
         similarity_threshold=payload.similarity_threshold,
+        api_key=user_api_key,
     )

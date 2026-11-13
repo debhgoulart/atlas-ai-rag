@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { UploadCloud, FileText, AlertCircle, Loader2 } from "lucide-vue-next";
+import { UploadCloud, AlertCircle, Loader2, KeyRound } from "lucide-vue-next";
+import { useGeminiCredentialStore } from "@/stores/geminiCredentialStore";
 
 const props = defineProps<{
   isUploading: boolean;
@@ -9,6 +10,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "upload", file: File): void;
 }>();
+
+const credentialStore = useGeminiCredentialStore();
 
 const isDragging = ref(false);
 const localError = ref<string | null>(null);
@@ -19,6 +22,11 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 function validateAndEmit(file: File) {
   localError.value = null;
+
+  if (!credentialStore.isValid) {
+    localError.value = "Você precisa cadastrar uma Gemini API Key válida para processar e gerar embeddings dos documentos.";
+    return;
+  }
 
   // Validate format
   const fileName = file.name.toLowerCase();
@@ -62,15 +70,37 @@ function handleFileInput(e: Event) {
 
 <template>
   <div class="space-y-3">
+    <!-- Unconfigured Warning Banner -->
+    <div
+      v-if="!credentialStore.isValid"
+      class="flex items-center justify-between px-4 py-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl text-xs text-amber-800 dark:text-amber-300"
+    >
+      <div class="flex items-center gap-2">
+        <KeyRound class="w-4 h-4 shrink-0" />
+        <span>
+          {{ credentialStore.isInvalid ? "Sua Gemini API Key expirou ou é inválida. Cadastre uma nova chave para vetorizar documentos." : "Cadastre sua Gemini API Key pessoal para habilitar o upload e vetorização de documentos." }}
+        </span>
+      </div>
+      <button
+        @click="credentialStore.openModal()"
+        type="button"
+        class="px-2.5 py-1 font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors cursor-pointer shrink-0 ml-3"
+      >
+        Configurar Chave
+      </button>
+    </div>
+
     <div
       @dragover.prevent="isDragging = true"
       @dragleave.prevent="isDragging = false"
       @drop.prevent="handleDrop"
       :class="[
-        'relative rounded-2xl border-2 border-dashed p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center',
-        isDragging
-          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 scale-[1.01]'
-          : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50/50 dark:border-zinc-850 dark:hover:border-zinc-700 dark:hover:bg-zinc-950/60 bg-white dark:bg-black',
+        'relative rounded-2xl border-2 border-dashed p-8 text-center transition-all flex flex-col items-center justify-center',
+        !credentialStore.isValid
+          ? 'border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/30 opacity-70 cursor-not-allowed'
+          : isDragging
+          ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 scale-[1.01] cursor-pointer'
+          : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50/50 dark:border-zinc-850 dark:hover:border-zinc-700 dark:hover:bg-zinc-950/60 bg-white dark:bg-black cursor-pointer',
         isUploading ? 'opacity-60 pointer-events-none' : '',
       ]"
     >
@@ -78,8 +108,8 @@ function handleFileInput(e: Event) {
         type="file"
         accept=".pdf,.txt,.md"
         @change="handleFileInput"
-        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        :disabled="isUploading"
+        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+        :disabled="isUploading || !credentialStore.isValid"
       />
 
       <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-zinc-900 dark:text-indigo-400 dark:border dark:border-zinc-800 flex items-center justify-center mb-3">
@@ -89,6 +119,7 @@ function handleFileInput(e: Event) {
 
       <p class="text-sm font-semibold text-slate-800 dark:text-zinc-200">
         <span v-if="isUploading">Processando documento e gerando embeddings...</span>
+        <span v-else-if="!credentialStore.isValid">Upload bloqueado até a configuração da Gemini API Key</span>
         <span v-else>Arraste seu documento aqui ou <span class="text-indigo-600 dark:text-indigo-400 underline">procure no computador</span></span>
       </p>
 
