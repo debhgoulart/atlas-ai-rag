@@ -1,0 +1,7 @@
+"""Atlas AI SQLAlchemy Models package."""
+
+from app.models.knowledge_base import KnowledgeBase
+from app.models.document import Document
+from app.models.document_chunk import DocumentChunk
+
+__all__ = ["KnowledgeBase", "Document", "DocumentChunk"]
