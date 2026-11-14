@@ -35,59 +35,6 @@ O **Atlas AI** é uma solução *Full Stack* voltada para a gestão de bases de 
 
 ---
 
-## 📸 Demonstração Visual
-
-<!-- 
-  =============================================================================
-  DICA PARA ADICIONAR SEUS PRINTS E VÍDEOS:
-  1. Salve as imagens na pasta: docs/assets/ (ex: screenshot-chat.png, upload.png)
-  2. Para vídeos, você pode usar um GIF animado ou link do YouTube/Loom!
-  =============================================================================
--->
-
-### 🎥 Demonstração em Vídeo / GIF Interativo
-
-> [!TIP]
-> Substitua o link abaixo pela gravação da tela ou GIF animado do seu fluxo de uso:
-
-```markdown
-<!-- Adicione seu vídeo ou GIF aqui: -->
-<!-- ![Demonstração Atlas AI](docs/assets/atlas-ai-demo.gif) -->
-```
-
-<div align="center">
-  <p><i>(Grave um tour rápido de 30 a 60 segundos demonstrando a criação de uma base, upload de arquivo e o chat RAG em funcionamento)</i></p>
-</div>
-
----
-
-### 🖼️ Telas da Aplicação
-
-<div align="center">
-
-#### 1. Chat RAG com Guardrail Anti-Alucinação e Rastreamento de Fontes
-*Demonstração do modelo respondendo de forma factual e acionando o fallback seguro ao detectar ausência de dados contextuais suficientes:*
-
-<img src="docs/assets/rag-chat-anti-hallucination.png" alt="Chat RAG com Citações e Guardrail" width="900" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;" />
-
-<br>
-
-#### 2. Pipeline de Ingestão e Processamento de Documentos
-```markdown
-<!-- Adicione seu print da tela de upload e listagem de documentos aqui: -->
-<!-- <img src="docs/assets/document-management.png" alt="Gestão de Documentos" width="900" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;" /> -->
-```
-
-#### 3. Dashboard e Gestão de Bases de Conhecimento
-```markdown
-<!-- Adicione seu print da tela inicial/dashboard de bases de conhecimento aqui: -->
-<!-- <img src="docs/assets/knowledge-base-dashboard.png" alt="Dashboard de Bases" width="900" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;" /> -->
-```
-
-</div>
-
----
-
 ## 🧠 Decisões Arquiteturais & Estudo de Caso
 
 O projeto foi construído sob uma governança formal orientada a **ADRs (Architectural Decision Records)**. Abaixo destacam-se os principais pilares técnicos:
