@@ -1,4 +1,4 @@
-"""Service orchestrating document ingestion, chunking, embeddings, and vector similarity search."""
+"""Service orchestrating document ingestion, chunking, embeddings, and vector similarity search (Multi-Tenant Scoped)."""
 
 import uuid
 from typing import List, Optional
@@ -18,7 +18,7 @@ from app.services.text_chunker import RecursiveTextChunker
 
 
 class IngestionService:
-    """Orchestrates end-to-end ingestion and vector search pipelines."""
+    """Orchestrates end-to-end ingestion and vector search pipelines scoped to the authenticated user."""
 
     def __init__(
         self,
@@ -38,11 +38,15 @@ class IngestionService:
         filename: str,
         content_type: str,
         file_bytes: bytes,
+        user_id: uuid.UUID,
         api_key: Optional[str] = None,
     ) -> DocumentResponse:
-        """Validate, extract, chunk, embed, and persist an uploaded document."""
-        # 1. Verify Knowledge Base exists
-        kb_stmt = select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
+        """Validate, extract, chunk, embed, and persist an uploaded document belonging to the user."""
+        # 1. Verify Knowledge Base exists and belongs to the user
+        kb_stmt = select(KnowledgeBase).where(
+            KnowledgeBase.id == kb_id,
+            KnowledgeBase.user_id == user_id,
+        )
         kb_res = await db.execute(kb_stmt)
         if not kb_res.scalar_one_or_none():
             raise EntityNotFoundException("KnowledgeBase", kb_id)
@@ -58,6 +62,7 @@ class IngestionService:
 
         # 3. Create initial document record with 'processing' state
         doc = Document(
+            user_id=user_id,
             knowledge_base_id=kb_id,
             filename=filename,
             content_type=content_type,
@@ -87,6 +92,7 @@ class IngestionService:
             # 7. Persist DocumentChunk instances
             for tc, emb in zip(text_chunks, embeddings):
                 chunk_obj = DocumentChunk(
+                    user_id=user_id,
                     document_id=doc.id,
                     knowledge_base_id=kb_id,
                     chunk_index=tc.index,
@@ -116,23 +122,35 @@ class IngestionService:
             await db.refresh(doc)
             raise
 
-    async def list_documents(self, db: AsyncSession, kb_id: uuid.UUID) -> List[DocumentResponse]:
-        """List all documents for a given knowledge base."""
-        # Verify knowledge base exists
-        kb_stmt = select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
+    async def list_documents(
+        self, db: AsyncSession, kb_id: uuid.UUID, user_id: uuid.UUID
+    ) -> List[DocumentResponse]:
+        """List all documents for a given knowledge base owned by the user."""
+        # Verify knowledge base exists and is owned by the user
+        kb_stmt = select(KnowledgeBase).where(
+            KnowledgeBase.id == kb_id,
+            KnowledgeBase.user_id == user_id,
+        )
         kb_res = await db.execute(kb_stmt)
         if not kb_res.scalar_one_or_none():
             raise EntityNotFoundException("KnowledgeBase", kb_id)
 
-        stmt = select(Document).where(Document.knowledge_base_id == kb_id).order_by(Document.created_at.desc())
+        stmt = select(Document).where(
+            Document.knowledge_base_id == kb_id,
+            Document.user_id == user_id,
+        ).order_by(Document.created_at.desc())
         result = await db.execute(stmt)
         docs = result.scalars().all()
         return [DocumentResponse.model_validate(d) for d in docs]
 
-    async def get_document(self, db: AsyncSession, kb_id: uuid.UUID, doc_id: uuid.UUID) -> DocumentResponse:
-        """Fetch details of a single document."""
+    async def get_document(
+        self, db: AsyncSession, kb_id: uuid.UUID, doc_id: uuid.UUID, user_id: uuid.UUID
+    ) -> DocumentResponse:
+        """Fetch details of a single document if owned by the user."""
         stmt = select(Document).where(
-            Document.id == doc_id, Document.knowledge_base_id == kb_id
+            Document.id == doc_id,
+            Document.knowledge_base_id == kb_id,
+            Document.user_id == user_id,
         )
         result = await db.execute(stmt)
         doc = result.scalar_one_or_none()
@@ -140,10 +158,14 @@ class IngestionService:
             raise EntityNotFoundException("Document", doc_id)
         return DocumentResponse.model_validate(doc)
 
-    async def delete_document(self, db: AsyncSession, kb_id: uuid.UUID, doc_id: uuid.UUID) -> None:
-        """Delete document and cascade remove all its vector chunks."""
+    async def delete_document(
+        self, db: AsyncSession, kb_id: uuid.UUID, doc_id: uuid.UUID, user_id: uuid.UUID
+    ) -> None:
+        """Delete document and cascade remove all its vector chunks if owned by the user."""
         stmt = select(Document).where(
-            Document.id == doc_id, Document.knowledge_base_id == kb_id
+            Document.id == doc_id,
+            Document.knowledge_base_id == kb_id,
+            Document.user_id == user_id,
         )
         result = await db.execute(stmt)
         doc = result.scalar_one_or_none()
@@ -158,13 +180,17 @@ class IngestionService:
         db: AsyncSession,
         kb_id: uuid.UUID,
         query: str,
+        user_id: uuid.UUID,
         limit: int = 5,
         similarity_threshold: float = 0.0,
         api_key: Optional[str] = None,
     ) -> List[SimilaritySearchResult]:
-        """Perform cosine similarity search against pgvector chunks."""
-        # 1. Verify knowledge base exists
-        kb_stmt = select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
+        """Perform cosine similarity search against pgvector chunks owned by the user."""
+        # 1. Verify knowledge base exists and belongs to user
+        kb_stmt = select(KnowledgeBase).where(
+            KnowledgeBase.id == kb_id,
+            KnowledgeBase.user_id == user_id,
+        )
         kb_res = await db.execute(kb_stmt)
         if not kb_res.scalar_one_or_none():
             raise EntityNotFoundException("KnowledgeBase", kb_id)
@@ -175,8 +201,7 @@ class IngestionService:
             query, task_type="RETRIEVAL_QUERY"
         )
 
-        # 3. Query pgvector using cosine distance operator `<=>`
-        # Cosine distance = 1 - cosine_similarity. Similarity = 1 - distance.
+        # 3. Query pgvector using cosine distance operator `<=>` strictly scoped to user_id
         distance_col = DocumentChunk.embedding.cosine_distance(query_embedding).label("distance")
 
         stmt = (
@@ -186,7 +211,10 @@ class IngestionService:
                 distance_col,
             )
             .join(Document, Document.id == DocumentChunk.document_id)
-            .where(DocumentChunk.knowledge_base_id == kb_id)
+            .where(
+                DocumentChunk.knowledge_base_id == kb_id,
+                DocumentChunk.user_id == user_id,
+            )
             .order_by(distance_col)
             .limit(limit)
         )

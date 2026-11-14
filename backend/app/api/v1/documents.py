@@ -1,12 +1,13 @@
-"""API endpoints for Document ingestion, lifecycle management, and semantic search."""
+"""API endpoints for Document ingestion, lifecycle management, and semantic search (Multi-Tenant Scoped)."""
 
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_user_gemini_api_key
+from app.api.deps import get_current_user, get_user_gemini_api_key
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.document import DocumentResponse
 from app.schemas.search import SimilaritySearchRequest, SimilaritySearchResult
 from app.services.ingestion_service import IngestionService
@@ -25,10 +26,11 @@ _ingestion_service = IngestionService()
 async def upload_document(
     kb_id: uuid.UUID,
     file: UploadFile = File(..., description="PDF, TXT, or Markdown document (max 10 MB)"),
+    current_user: User = Depends(get_current_user),
     user_api_key: str = Depends(get_user_gemini_api_key),
     db: AsyncSession = Depends(get_db),
 ) -> DocumentResponse:
-    """Upload a document, extract text, generate chunked embeddings, and index into pgvector."""
+    """Upload a document, extract text, generate chunked embeddings, and index into pgvector for the user."""
     file_bytes = await file.read()
     filename = file.filename or "uploaded_file"
     content_type = file.content_type or "application/octet-stream"
@@ -39,6 +41,7 @@ async def upload_document(
         filename=filename,
         content_type=content_type,
         file_bytes=file_bytes,
+        user_id=current_user.id,
         api_key=user_api_key,
     )
 
@@ -51,10 +54,11 @@ async def upload_document(
 )
 async def list_documents(
     kb_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> List[DocumentResponse]:
-    """Retrieve all documents belonging to the specified knowledge base."""
-    return await _ingestion_service.list_documents(db, kb_id)
+    """Retrieve all documents belonging to the user in the specified knowledge base."""
+    return await _ingestion_service.list_documents(db, kb_id, user_id=current_user.id)
 
 
 @router.get(
@@ -66,10 +70,11 @@ async def list_documents(
 async def get_document(
     kb_id: uuid.UUID,
     doc_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> DocumentResponse:
-    """Retrieve details and chunk counts of a specific document."""
-    return await _ingestion_service.get_document(db, kb_id, doc_id)
+    """Retrieve details and chunk counts of a specific document owned by the user."""
+    return await _ingestion_service.get_document(db, kb_id, doc_id, user_id=current_user.id)
 
 
 @router.delete(
@@ -80,10 +85,11 @@ async def get_document(
 async def delete_document(
     kb_id: uuid.UUID,
     doc_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    """Delete a document and cascade purge all its associated vector embeddings."""
-    await _ingestion_service.delete_document(db, kb_id, doc_id)
+    """Delete a document and cascade purge all its associated vector embeddings if owned by the user."""
+    await _ingestion_service.delete_document(db, kb_id, doc_id, user_id=current_user.id)
 
 
 @router.post(
@@ -95,14 +101,16 @@ async def delete_document(
 async def search_knowledge_base(
     kb_id: uuid.UUID,
     payload: SimilaritySearchRequest,
+    current_user: User = Depends(get_current_user),
     user_api_key: str = Depends(get_user_gemini_api_key),
     db: AsyncSession = Depends(get_db),
 ) -> List[SimilaritySearchResult]:
-    """Perform cosine similarity vector retrieval against document chunks in the knowledge base."""
+    """Perform cosine similarity vector retrieval against document chunks strictly owned by the user."""
     return await _ingestion_service.search_similar_chunks(
         db=db,
         kb_id=kb_id,
         query=payload.query,
+        user_id=current_user.id,
         limit=payload.limit,
         similarity_threshold=payload.similarity_threshold,
         api_key=user_api_key,

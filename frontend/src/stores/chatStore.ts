@@ -117,6 +117,14 @@ export const useChatStore = defineStore("chat", () => {
     }
   }
 
+  function reset() {
+    sessions.value = [];
+    currentSession.value = null;
+    isThinking.value = false;
+    isLoadingSessions.value = false;
+    errorMessage.value = null;
+  }
+
   return {
     sessions,
     currentSession,
@@ -128,5 +136,6 @@ export const useChatStore = defineStore("chat", () => {
     createSession,
     deleteSession,
     sendMessage,
+    reset,
   };
 });

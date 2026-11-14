@@ -1,7 +1,7 @@
 """SQLAlchemy model for User entity."""
 
 import uuid
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import Boolean, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,6 +9,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.chat_session import ChatSession
+    from app.models.document import Document
+    from app.models.knowledge_base import KnowledgeBase
     from app.models.user_gemini_credential import UserGeminiCredential
 
 
@@ -44,6 +47,26 @@ class User(Base, TimestampMixin):
         "UserGeminiCredential",
         back_populates="user",
         uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    # Multi-tenant owned resources
+    knowledge_bases: Mapped[List["KnowledgeBase"]] = relationship(
+        "KnowledgeBase",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    documents: Mapped[List["Document"]] = relationship(
+        "Document",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    chat_sessions: Mapped[List["ChatSession"]] = relationship(
+        "ChatSession",
+        back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )

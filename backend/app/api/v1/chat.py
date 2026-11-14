@@ -1,4 +1,4 @@
-"""API endpoints for Chat Sessions, message sending, and conversational RAG history."""
+"""API endpoints for Chat Sessions, message sending, and conversational RAG history (Multi-Tenant Scoped)."""
 
 import uuid
 from typing import List
@@ -31,10 +31,11 @@ _chat_service = RAGChatService()
 async def create_chat_session(
     kb_id: uuid.UUID,
     payload: ChatSessionCreate = ChatSessionCreate(),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ChatSessionResponse:
-    """Create a new conversational session linked to a Knowledge Base."""
-    return await _chat_service.create_session(db, kb_id, payload.title)
+    """Create a new conversational session linked to a Knowledge Base owned by the user."""
+    return await _chat_service.create_session(db, kb_id, user_id=current_user.id, title=payload.title)
 
 
 @router.get(
@@ -45,10 +46,11 @@ async def create_chat_session(
 )
 async def list_chat_sessions(
     kb_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> List[ChatSessionResponse]:
-    """Retrieve all chat sessions for the specified knowledge base, ordered by recent activity."""
-    return await _chat_service.list_sessions(db, kb_id)
+    """Retrieve all chat sessions for the specified knowledge base owned by the user."""
+    return await _chat_service.list_sessions(db, kb_id, user_id=current_user.id)
 
 
 @router.get(
@@ -60,10 +62,11 @@ async def list_chat_sessions(
 async def get_chat_session(
     kb_id: uuid.UUID,
     chat_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ChatSessionDetailResponse:
-    """Retrieve chat session details along with chronological message history."""
-    return await _chat_service.get_session_details(db, kb_id, chat_id)
+    """Retrieve chat session details along with chronological message history if owned by user."""
+    return await _chat_service.get_session_details(db, kb_id, chat_id, user_id=current_user.id)
 
 
 @router.delete(
@@ -74,10 +77,11 @@ async def get_chat_session(
 async def delete_chat_session(
     kb_id: uuid.UUID,
     chat_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    """Delete a chat session and cascade delete all its messages."""
-    await _chat_service.delete_session(db, kb_id, chat_id)
+    """Delete a chat session and cascade delete all its messages if owned by user."""
+    await _chat_service.delete_session(db, kb_id, chat_id, user_id=current_user.id)
 
 
 @router.post(
@@ -100,6 +104,6 @@ async def send_message(
         kb_id=kb_id,
         session_id=chat_id,
         user_content=payload.content,
-        api_key=user_api_key,
         user_id=current_user.id,
+        api_key=user_api_key,
     )

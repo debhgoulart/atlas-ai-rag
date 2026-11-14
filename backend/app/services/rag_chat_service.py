@@ -1,4 +1,4 @@
-"""Service orchestrating conversational RAG chat, prompt construction, and history tracking."""
+"""Service orchestrating conversational RAG chat, prompt construction, and history tracking (Multi-Tenant Scoped)."""
 
 import time
 import uuid
@@ -22,7 +22,7 @@ from app.services.ingestion_service import IngestionService
 
 
 class RAGChatService:
-    """Orchestrator for conversational RAG interactions with Google Gemini."""
+    """Orchestrator for conversational RAG interactions with Google Gemini, scoped to user identity."""
 
     SYSTEM_PROMPT_TEMPLATE = """Você é o assistente virtual Atlas AI, um especialista analítico e confiável de recuperação de informações.
 
@@ -49,15 +49,19 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
         self.history_window_size = history_window_size
 
     async def create_session(
-        self, db: AsyncSession, kb_id: uuid.UUID, title: Optional[str] = None
+        self, db: AsyncSession, kb_id: uuid.UUID, user_id: uuid.UUID, title: Optional[str] = None
     ) -> ChatSessionResponse:
-        """Create a new conversational session linked to a Knowledge Base."""
-        kb_stmt = select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
+        """Create a new conversational session linked to a Knowledge Base owned by the user."""
+        kb_stmt = select(KnowledgeBase).where(
+            KnowledgeBase.id == kb_id,
+            KnowledgeBase.user_id == user_id,
+        )
         kb_res = await db.execute(kb_stmt)
         if not kb_res.scalar_one_or_none():
             raise EntityNotFoundException("KnowledgeBase", kb_id)
 
         session = ChatSession(
+            user_id=user_id,
             knowledge_base_id=kb_id,
             title=title or "Nova Conversa",
         )
@@ -74,9 +78,14 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
             updated_at=session.updated_at,
         )
 
-    async def list_sessions(self, db: AsyncSession, kb_id: uuid.UUID) -> List[ChatSessionResponse]:
-        """List all chat sessions for a knowledge base with message counts."""
-        kb_stmt = select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
+    async def list_sessions(
+        self, db: AsyncSession, kb_id: uuid.UUID, user_id: uuid.UUID
+    ) -> List[ChatSessionResponse]:
+        """List all chat sessions for a knowledge base owned by the user with message counts."""
+        kb_stmt = select(KnowledgeBase).where(
+            KnowledgeBase.id == kb_id,
+            KnowledgeBase.user_id == user_id,
+        )
         kb_res = await db.execute(kb_stmt)
         if not kb_res.scalar_one_or_none():
             raise EntityNotFoundException("KnowledgeBase", kb_id)
@@ -87,7 +96,10 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
                 func.count(ChatMessage.id).label("msg_count"),
             )
             .outerjoin(ChatMessage, ChatMessage.chat_session_id == ChatSession.id)
-            .where(ChatSession.knowledge_base_id == kb_id)
+            .where(
+                ChatSession.knowledge_base_id == kb_id,
+                ChatSession.user_id == user_id,
+            )
             .group_by(ChatSession.id)
             .order_by(ChatSession.updated_at.desc())
         )
@@ -107,12 +119,13 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
         ]
 
     async def get_session_details(
-        self, db: AsyncSession, kb_id: uuid.UUID, session_id: uuid.UUID
+        self, db: AsyncSession, kb_id: uuid.UUID, session_id: uuid.UUID, user_id: uuid.UUID
     ) -> ChatSessionDetailResponse:
-        """Fetch session metadata and full chronological message history."""
-        stmt = (
-            select(ChatSession)
-            .where(ChatSession.id == session_id, ChatSession.knowledge_base_id == kb_id)
+        """Fetch session metadata and full chronological message history if owned by the user."""
+        stmt = select(ChatSession).where(
+            ChatSession.id == session_id,
+            ChatSession.knowledge_base_id == kb_id,
+            ChatSession.user_id == user_id,
         )
         result = await db.execute(stmt)
         session = result.scalar_one_or_none()
@@ -136,10 +149,14 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
             updated_at=session.updated_at,
         )
 
-    async def delete_session(self, db: AsyncSession, kb_id: uuid.UUID, session_id: uuid.UUID) -> None:
-        """Delete chat session and cascade expunge all messages."""
+    async def delete_session(
+        self, db: AsyncSession, kb_id: uuid.UUID, session_id: uuid.UUID, user_id: uuid.UUID
+    ) -> None:
+        """Delete chat session and cascade expunge all messages if owned by the user."""
         stmt = select(ChatSession).where(
-            ChatSession.id == session_id, ChatSession.knowledge_base_id == kb_id
+            ChatSession.id == session_id,
+            ChatSession.knowledge_base_id == kb_id,
+            ChatSession.user_id == user_id,
         )
         result = await db.execute(stmt)
         session = result.scalar_one_or_none()
@@ -155,15 +172,17 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
         kb_id: uuid.UUID,
         session_id: uuid.UUID,
         user_content: str,
+        user_id: uuid.UUID,
         api_key: Optional[str] = None,
-        user_id: Optional[uuid.UUID] = None,
     ) -> ChatMessageResponse:
-        """Process user message through vector retrieval and synthesis, persisting both turns."""
+        """Process user message through vector retrieval and synthesis, strictly scoped to the user."""
         start_time = time.perf_counter()
 
-        # 1. Verify session exists
+        # 1. Verify session exists and belongs to the user
         session_stmt = select(ChatSession).where(
-            ChatSession.id == session_id, ChatSession.knowledge_base_id == kb_id
+            ChatSession.id == session_id,
+            ChatSession.knowledge_base_id == kb_id,
+            ChatSession.user_id == user_id,
         )
         session_res = await db.execute(session_stmt)
         session = session_res.scalar_one_or_none()
@@ -181,11 +200,12 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
         await db.commit()
         await db.refresh(user_msg)
 
-        # 3. Retrieve top relevant chunks from pgvector
+        # 3. Retrieve top relevant chunks from pgvector strictly scoped to user_id
         search_results = await self.ingestion_service.search_similar_chunks(
             db=db,
             kb_id=kb_id,
             query=user_content,
+            user_id=user_id,
             limit=5,
             similarity_threshold=0.0,
             api_key=api_key,
@@ -264,7 +284,6 @@ SUAS DIRETRIZES FUNDAMENTAIS (NÃO NEGOCIÁVEIS):
 
         # Update session title if default
         if session.title == "Nova Conversa":
-            # Set title from first few words of question
             clean_title = user_content[:40].strip() + ("..." if len(user_content) > 40 else "")
             session.title = clean_title
 

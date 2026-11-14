@@ -1,11 +1,13 @@
-"""API endpoints for Knowledge Base operations."""
+"""API endpoints for Knowledge Base operations (Scoped to Authenticated User)."""
 
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.knowledge_base import KnowledgeBaseCreate, KnowledgeBaseResponse
 from app.services.knowledge_base_service import KnowledgeBaseService
 
@@ -20,10 +22,11 @@ router = APIRouter(prefix="/knowledge-bases", tags=["Knowledge Bases"])
 )
 async def create_knowledge_base(
     payload: KnowledgeBaseCreate,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> KnowledgeBaseResponse:
-    """Create a new isolated knowledge base collection."""
-    return await KnowledgeBaseService.create(db, payload)
+    """Create a new isolated knowledge base collection belonging to the authenticated user."""
+    return await KnowledgeBaseService.create(db, payload, user_id=current_user.id)
 
 
 @router.get(
@@ -35,10 +38,11 @@ async def create_knowledge_base(
 async def list_knowledge_bases(
     skip: int = Query(0, ge=0, description="Offset for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Limit for pagination"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> List[KnowledgeBaseResponse]:
-    """Retrieve all knowledge bases with document counts."""
-    return await KnowledgeBaseService.list_all(db, skip=skip, limit=limit)
+    """Retrieve all knowledge bases belonging strictly to the authenticated user."""
+    return await KnowledgeBaseService.list_all(db, user_id=current_user.id, skip=skip, limit=limit)
 
 
 @router.get(
@@ -49,10 +53,11 @@ async def list_knowledge_bases(
 )
 async def get_knowledge_base(
     kb_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> KnowledgeBaseResponse:
-    """Retrieve details of a specific knowledge base."""
-    return await KnowledgeBaseService.get_by_id(db, kb_id)
+    """Retrieve details of a specific knowledge base if owned by the authenticated user."""
+    return await KnowledgeBaseService.get_by_id(db, kb_id, user_id=current_user.id)
 
 
 @router.delete(
@@ -62,7 +67,8 @@ async def get_knowledge_base(
 )
 async def delete_knowledge_base(
     kb_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> None:
-    """Delete a knowledge base and cascade delete all its documents and vector chunks."""
-    await KnowledgeBaseService.delete(db, kb_id)
+    """Delete a knowledge base if owned by the authenticated user, cascading all documents and chunks."""
+    await KnowledgeBaseService.delete(db, kb_id, user_id=current_user.id)

@@ -16,17 +16,30 @@ async def test_health_check(async_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_create_and_get_knowledge_base(async_client: AsyncClient) -> None:
-    """Test creating a new knowledge base and retrieving it."""
+    """Test creating a new knowledge base and retrieving it under authenticated session."""
+    user_email = f"kb_tester_{uuid.uuid4().hex[:8]}@example.com"
+    reg_resp = await async_client.post(
+        "/api/v1/auth/register",
+        json={"email": user_email, "password": "Password123!"},
+    )
+    if reg_resp.status_code == 500:
+        pytest.skip("Database connection not active in current test sandbox")
+
+    login_resp = await async_client.post(
+        "/api/v1/auth/login",
+        json={"email": user_email, "password": "Password123!"},
+    )
+    headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+
     kb_payload = {
         "name": f"Test Base {uuid.uuid4().hex[:8]}",
         "description": "Integration test knowledge base description",
     }
 
     # 1. Create
-    response = await async_client.post("/api/v1/knowledge-bases", json=kb_payload)
-    if response.status_code == 500:
-        pytest.skip("Database connection not active in current test sandbox")
-
+    response = await async_client.post(
+        "/api/v1/knowledge-bases", json=kb_payload, headers=headers
+    )
     assert response.status_code == 201
     created_data = response.json()
     assert created_data["name"] == kb_payload["name"]
@@ -34,25 +47,35 @@ async def test_create_and_get_knowledge_base(async_client: AsyncClient) -> None:
     kb_id = created_data["id"]
 
     # 2. Get by ID
-    get_response = await async_client.get(f"/api/v1/knowledge-bases/{kb_id}")
+    get_response = await async_client.get(
+        f"/api/v1/knowledge-bases/{kb_id}", headers=headers
+    )
     assert get_response.status_code == 200
     assert get_response.json()["id"] == kb_id
 
     # 3. List
-    list_response = await async_client.get("/api/v1/knowledge-bases")
+    list_response = await async_client.get(
+        "/api/v1/knowledge-bases", headers=headers
+    )
     assert list_response.status_code == 200
     bases = list_response.json()
     assert any(b["id"] == kb_id for b in bases)
 
     # 4. Duplicate name validation
-    dup_response = await async_client.post("/api/v1/knowledge-bases", json=kb_payload)
+    dup_response = await async_client.post(
+        "/api/v1/knowledge-bases", json=kb_payload, headers=headers
+    )
     assert dup_response.status_code == 400
     assert dup_response.json()["code"] == "DUPLICATE_ENTITY"
 
     # 5. Delete
-    del_response = await async_client.delete(f"/api/v1/knowledge-bases/{kb_id}")
+    del_response = await async_client.delete(
+        f"/api/v1/knowledge-bases/{kb_id}", headers=headers
+    )
     assert del_response.status_code == 204
 
     # 6. Verify 404 after deletion
-    not_found = await async_client.get(f"/api/v1/knowledge-bases/{kb_id}")
+    not_found = await async_client.get(
+        f"/api/v1/knowledge-bases/{kb_id}", headers=headers
+    )
     assert not_found.status_code == 404

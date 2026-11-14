@@ -3,7 +3,7 @@
 import uuid
 from typing import TYPE_CHECKING, Any, Dict
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ForeignKey, Integer, Text
+from sqlalchemy import ForeignKey, Index, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,17 +12,27 @@ from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.document import Document
+    from app.models.user import User
 
 
 class DocumentChunk(Base, TimestampMixin):
     """Document Chunk entity containing slice text and dense vector embedding."""
 
     __tablename__ = "document_chunks"
+    __table_args__ = (
+        Index("ix_document_chunks_user_kb", "user_id", "knowledge_base_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     document_id: Mapped[uuid.UUID] = mapped_column(
@@ -57,10 +67,11 @@ class DocumentChunk(Base, TimestampMixin):
     )
 
     # Relationships
+    user: Mapped["User"] = relationship("User")
     document: Mapped["Document"] = relationship(
         "Document",
         back_populates="chunks",
     )
 
     def __repr__(self) -> str:
-        return f"<DocumentChunk(id={self.id}, doc_id={self.document_id}, index={self.chunk_index})>"
+        return f"<DocumentChunk(id={self.id}, user_id={self.user_id}, doc_id={self.document_id}, index={self.chunk_index})>"

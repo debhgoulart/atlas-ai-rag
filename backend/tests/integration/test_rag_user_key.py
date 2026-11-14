@@ -43,10 +43,14 @@ async def test_rag_chat_uses_user_decrypted_key(async_client: AsyncClient) -> No
     kb_resp = await async_client.post(
         "/api/v1/knowledge-bases",
         json={"name": f"KB_{uuid.uuid4().hex[:8]}"},
+        headers=headers,
     )
     kb_id = kb_resp.json()["id"]
 
-    chat_resp = await async_client.post(f"/api/v1/knowledge-bases/{kb_id}/chats")
+    chat_resp = await async_client.post(
+        f"/api/v1/knowledge-bases/{kb_id}/chats",
+        headers=headers,
+    )
     chat_id = chat_resp.json()["id"]
 
     # Send message and verify Gemini client receives the user's decrypted key

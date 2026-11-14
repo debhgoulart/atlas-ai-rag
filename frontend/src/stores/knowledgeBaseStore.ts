@@ -108,6 +108,15 @@ export const useKnowledgeBaseStore = defineStore("knowledgeBase", () => {
     }
   }
 
+  function reset() {
+    knowledgeBases.value = [];
+    currentKnowledgeBase.value = null;
+    documents.value = [];
+    isLoading.value = false;
+    isUploading.value = false;
+    errorMessage.value = null;
+  }
+
   return {
     knowledgeBases,
     currentKnowledgeBase,
@@ -122,5 +131,6 @@ export const useKnowledgeBaseStore = defineStore("knowledgeBase", () => {
     fetchDocuments,
     uploadDocument,
     deleteDocument,
+    reset,
   };
 });

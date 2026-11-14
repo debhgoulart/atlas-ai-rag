@@ -11,10 +11,11 @@ from app.db.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from app.models.knowledge_base import KnowledgeBase
     from app.models.document_chunk import DocumentChunk
+    from app.models.user import User
 
 
 class Document(Base, TimestampMixin):
-    """Document entity representing an uploaded and processed file."""
+    """Document entity representing an uploaded and processed file belonging to a user."""
 
     __tablename__ = "documents"
 
@@ -22,6 +23,12 @@ class Document(Base, TimestampMixin):
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
         index=True,
     )
     knowledge_base_id: Mapped[uuid.UUID] = mapped_column(
@@ -59,6 +66,7 @@ class Document(Base, TimestampMixin):
     )
 
     # Relationships
+    user: Mapped["User"] = relationship("User")
     knowledge_base: Mapped["KnowledgeBase"] = relationship(
         "KnowledgeBase",
         back_populates="documents",
@@ -71,4 +79,4 @@ class Document(Base, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<Document(id={self.id}, filename='{self.filename}', status='{self.status}')>"
+        return f"<Document(id={self.id}, user_id={self.user_id}, filename='{self.filename}', status='{self.status}')>"

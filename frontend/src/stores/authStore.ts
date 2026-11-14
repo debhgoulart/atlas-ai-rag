@@ -3,6 +3,9 @@ import { ref, computed } from "vue";
 import { authService } from "@/services/authService";
 import type { LoginCredentials, RegisterData, User } from "@/types";
 import router from "@/router";
+import { useKnowledgeBaseStore } from "@/stores/knowledgeBaseStore";
+import { useChatStore } from "@/stores/chatStore";
+import { useGeminiCredentialStore } from "@/stores/geminiCredentialStore";
 
 export const useAuthStore = defineStore("auth", () => {
   const token = ref<string | null>(localStorage.getItem("atlas_auth_token"));
@@ -49,6 +52,12 @@ export const useAuthStore = defineStore("auth", () => {
     token.value = null;
     user.value = null;
     localStorage.removeItem("atlas_auth_token");
+
+    // Purge cached data in all application stores
+    useKnowledgeBaseStore().reset();
+    useChatStore().reset();
+    useGeminiCredentialStore().reset();
+
     if (router.currentRoute.value.name !== "login") {
       router.push({ name: "login" });
     }

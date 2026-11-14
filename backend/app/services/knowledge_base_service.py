@@ -6,19 +6,24 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DuplicateEntityException, EntityNotFoundException
-from app.models.knowledge_base import KnowledgeBase
 from app.models.document import Document
-from app.schemas.knowledge_base import KnowledgeBaseCreate, KnowledgeBaseResponse, KnowledgeBaseUpdate
+from app.models.knowledge_base import KnowledgeBase
+from app.schemas.knowledge_base import KnowledgeBaseCreate, KnowledgeBaseResponse
 
 
 class KnowledgeBaseService:
     """Service handling CRUD operations and queries for Knowledge Bases."""
 
     @staticmethod
-    async def create(db: AsyncSession, data: KnowledgeBaseCreate) -> KnowledgeBaseResponse:
-        """Create a new Knowledge Base ensuring unique name."""
-        # Check for existing knowledge base with same name
-        stmt = select(KnowledgeBase).where(KnowledgeBase.name == data.name)
+    async def create(
+        db: AsyncSession, data: KnowledgeBaseCreate, user_id: uuid.UUID
+    ) -> KnowledgeBaseResponse:
+        """Create a new Knowledge Base ensuring unique name for the authenticated user."""
+        # Check for existing knowledge base with same name under this user
+        stmt = select(KnowledgeBase).where(
+            KnowledgeBase.user_id == user_id,
+            KnowledgeBase.name == data.name,
+        )
         result = await db.execute(stmt)
         existing = result.scalar_one_or_none()
         if existing:
@@ -29,6 +34,7 @@ class KnowledgeBaseService:
             )
 
         kb = KnowledgeBase(
+            user_id=user_id,
             name=data.name,
             description=data.description,
         )
@@ -46,15 +52,20 @@ class KnowledgeBaseService:
         )
 
     @staticmethod
-    async def get_by_id(db: AsyncSession, kb_id: uuid.UUID) -> KnowledgeBaseResponse:
-        """Fetch a knowledge base by ID, computing document count."""
+    async def get_by_id(
+        db: AsyncSession, kb_id: uuid.UUID, user_id: uuid.UUID
+    ) -> KnowledgeBaseResponse:
+        """Fetch a knowledge base by ID for the authenticated user, computing document count."""
         stmt = (
             select(
                 KnowledgeBase,
                 func.count(Document.id).label("doc_count"),
             )
             .outerjoin(Document, Document.knowledge_base_id == KnowledgeBase.id)
-            .where(KnowledgeBase.id == kb_id)
+            .where(
+                KnowledgeBase.id == kb_id,
+                KnowledgeBase.user_id == user_id,
+            )
             .group_by(KnowledgeBase.id)
         )
         result = await db.execute(stmt)
@@ -74,15 +85,16 @@ class KnowledgeBaseService:
 
     @staticmethod
     async def list_all(
-        db: AsyncSession, skip: int = 0, limit: int = 20
+        db: AsyncSession, user_id: uuid.UUID, skip: int = 0, limit: int = 20
     ) -> List[KnowledgeBaseResponse]:
-        """List knowledge bases with pagination and document counts."""
+        """List knowledge bases belonging strictly to the authenticated user."""
         stmt = (
             select(
                 KnowledgeBase,
                 func.count(Document.id).label("doc_count"),
             )
             .outerjoin(Document, Document.knowledge_base_id == KnowledgeBase.id)
+            .where(KnowledgeBase.user_id == user_id)
             .group_by(KnowledgeBase.id)
             .order_by(KnowledgeBase.created_at.desc())
             .offset(skip)
@@ -104,9 +116,12 @@ class KnowledgeBaseService:
         ]
 
     @staticmethod
-    async def delete(db: AsyncSession, kb_id: uuid.UUID) -> None:
-        """Delete a knowledge base and cascade all documents and vector chunks."""
-        stmt = select(KnowledgeBase).where(KnowledgeBase.id == kb_id)
+    async def delete(db: AsyncSession, kb_id: uuid.UUID, user_id: uuid.UUID) -> None:
+        """Delete a knowledge base if owned by the user, cascading all documents and vector chunks."""
+        stmt = select(KnowledgeBase).where(
+            KnowledgeBase.id == kb_id,
+            KnowledgeBase.user_id == user_id,
+        )
         result = await db.execute(stmt)
         kb = result.scalar_one_or_none()
         if not kb:

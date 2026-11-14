@@ -68,6 +68,14 @@ export const useGeminiCredentialStore = defineStore("geminiCredential", () => {
     isModalOpen.value = false;
   }
 
+  function reset(): void {
+    status.value = "NOT_CONFIGURED";
+    keyHint.value = null;
+    lastValidatedAt.value = null;
+    isLoading.value = false;
+    isModalOpen.value = false;
+  }
+
   return {
     status,
     keyHint,
@@ -82,5 +90,6 @@ export const useGeminiCredentialStore = defineStore("geminiCredential", () => {
     removeKey,
     openModal,
     closeModal,
+    reset,
   };
 });
